@@ -1,6 +1,6 @@
 # @De-Formed Validations
 
-@De-Formed Validations is a react hook that offers a robust and unopinionated API to customize form and data validations. With only a handful of properties to learn, @de-formed maintains its own internal state with simple function calls so that you can design your architecture the way you want to.
+@De-Formed Validations offers a robust and unopinionated API to customize form and data validations. With only a handful of properties to learn, @de-formed maintains its own internal state with simple function calls so that you can design your architecture the way you want to.
 
 ## Why Use De-Formed?
 
@@ -11,10 +11,10 @@
 
 ## Install
 ```
-yarn add @de-formed/react-validations
+yarn add @de-formed/node-validations
 ```
 ```
-npm i @de-formed/react-validations
+npm i @de-formed/node-validations
 ```
 ## Basic Usage
 
@@ -55,59 +55,22 @@ export const PersonValidation = () => {
 };
 ```
 
-### Step 2: Plug into React Component
+### Step 2: Plug in anywhere you like
 ```tsx
-// PersonForm.component.tsx
-import React from 'react';
 import { PersonValidation } from './PersonValidation';
+import { Request, Response } from 'express';
 
-export const PersonForm = ({ person, onChange }) => {
-  const v = PersonValidation();
+const v = PersonValidation();
 
-  const handleChange = v.validateOnChange(onChange, person);
-  const handleBlur = v.validateOnBlur(person);
-
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    const canSubmit = v.validateAll(person);
-    if (canSubmit) {
-      // submit logic
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>First Name</label>
-        <input
-          name="firstName"
-          onBlur={handleBlur}
-          onChange={handleChange}
-          value={person.firstName}
-        />
-        {v.getError('firstName') && <p>{v.getError('firstName')}</p>}
-      </div>
-      <div>
-        <label>Last Name</label>
-        <input
-          name="lastName"
-          onBlur={handleBlur}
-          onChange={handleChange}
-          value={person.lastName}
-        />
-        {v.getError('lastName') && <p>{v.getError('lastName')}</p>}
-      </div>
-      <button>Submit</button>
-    </form>
-  );
-};
+app.post('/user', (req: Request, res: Response) =>
+  v.validate(req.body) ? res.status(200) : res.json(v.validationState));
 ```
 
 ***
 
 ## Schema Design for the FP folks
 ```ts
-import { useValidation } from "@de-formed/react-validations";
+import { useValidation } from "@de-formed/node-validations";
 import * as R from "ramda";
 import { emailRegex } from "../constants";
 import { PersonalInformation } from "../types";
@@ -178,195 +141,6 @@ export const PersonalInformationValidation = () => {
       },
     ],
   });
-};
-```
-
-***
-
-## Composable Forms
-With validations abstracted to handle a single data layer, forms become composable once you seprate the form control from the form inputs. Feel free to read my blog with a link to an example code base: (link coming soon to a readme near you)
-
-### Form Inputs
-```js
-// Panda.form.js
-import * as R from "ramda";
-import React, { useEffect } from "react";
-import { FoodForm } from "../forms/Food.form";
-import { NameForm } from "../forms/Name.form";
-import { FriendForm } from "../forms/Friend.form";
-import { DynamicForm } from "../common/DynamicForm.common";
-import { replaceArrayItem, through } from "../utils/general";
-import { maybe } from "../utils/maybe";
-import { PandaValidations } from "../validations/Panda.validations";
-import { emptyFriend } from "../models/friend.model";
-
-export const PandaForm = ({
-  onChange,
-  data,
-  disabled,
-  submitFailed,
-  overrideValidationState,
-}) => {
-  // --[ dependencies ]--------------------------------------------------------
-  const v = PandaValidations();
-
-  // --[ component logic ]-----------------------------------------------------
-  // get :: string -> data[string]
-  const get = R.prop(R.__, data);
-
-  // updateModel[model] :: Partial<Panda> -> { Partial<Panda> }
-  const updateModel = {
-    name: R.assoc("name", R.__, data),
-    food: R.assoc("food", R.__, data),
-    friends: R.compose(
-      R.assoc("friends", R.__, data),
-      replaceArrayItem(get("friends"), "id")
-  ),
-  };
-
-  // validateChange :: string -> Partial<Panda> -> void
-  const validateChange = (name) =>
-    R.converge(v.validateIfTrue, [R.always(name), R.mergeRight(data)]);
-
-  // handleChange :: string -> Partial<Panda> -> void
-  const handleChange = (name) =>
-    through([
-      validateChange(name),
-      R.compose(onChange, updateModel[name]),
-    ]);
-
-  // addFriend :: () -> void
-  const addFriend = (_) =>
-    onChange({
-      ...data,
-      friends: [...get("friends"), emptyFriend()],
-    });
-
-  // removeFriend :: friend -> void
-  const removeFriend = (friend) => {
-    const friends = get("friends").filter((f) => f.id !== friend.id);
-    onChange({ ...data, friends });
-  };
-
-  // --[ lifecycle ]-----------------------------------------------------------
-  useEffect(() => {
-    if (submitFailed) {
-      v.validateAll(data);
-      maybe(overrideValidationState).map(v.setValidationState);
-    }
-  }, [submitFailed, overrideValidationState, data]); // eslint-disable-line
-
-  return (
-    <>
-      <fieldset>
-        <legend>Panda.form.jsx</legend>
-        <NameForm
-          data={get("name")}
-          disabled={disabled}
-          onChange={handleChange("name")}
-          submitFailed={submitFailed}
-        />
-        <FoodForm
-          data={get("food")}
-          disabled={disabled}
-          onChange={handleChange("food")}
-          submitFailed={submitFailed}
-        />
-        <h2>Add friends for your panda</h2>
-        <DynamicForm
-          addForm={addFriend}
-          disabled={disabled}
-          entity="Friend"
-          form={FriendForm}
-          items={get("friends")}
-          formKey="id"
-          onChange={handleChange("friends")}
-          removeForm={removeFriend}
-          submitFailed={submitFailed}
-        />
-      </fieldset>
-    </>
-  );
-};
-```
-### Form Control
-```js
-// CreatePanda.component.js
-import * as R from "ramda";
-import React, { useState } from "react";
-import { emptyPanda } from "../models/panda.model";
-import { PandaValidations } from "../validations/Panda.validations";
-import { useToggle } from "../hooks/useToggle.hook";
-import { PandaForm } from "../forms/Panda.form";
-import { ValidationErrors } from "../common/ValidationErrors.common";
-import { through, trace } from "../utils/general";
-import { handleApiResponse, request } from "../utils/request";
-
-export const CreatePanda = ({ disabled }) => {
-  // --[ dependencies ]--------------------------------------------------------
-  const v = PandaValidations();
-
-  // --[ local state ]---------------------------------------------------------
-  const [panda, setPanda] = useState(emptyPanda());
-  const [
-    hasValidationErrors,
-    activateValidationErrors,
-    deactivateValidationErrors,
-  ] = useToggle(false);
-
-  // --[ component logic ]-----------------------------------------------------
-  // handleChange :: Panda -> void
-  const handleChange = through([
-    v.validateAllIfTrue,
-    setPanda
-  ]);
-
-  // handleSubmitResponse :: API JSON -> void
-  const handleSubmitResponse = handleApiResponse(v, activateValidationErrors);
-
-  // dispatchPayload :: Panda -> void
-  const dispatchPayload = async (payload) => {
-    request('panda', "POST", payload)
-      .then((res) => res.json())
-      .then(handleSubmitResponse)
-      .catch(trace("whoopsies"));
-  };
-
-  // onFailure :: Panda -> void
-  const onFailure = through([
-    trace("rendering front-end errors"),
-    activateValidationErrors,
-  ]);
-
-  // onSuccess :: Panda -> void
-  const onSuccess = through([
-    dispatchPayload,
-    deactivateValidationErrors
-  ]);
-
-  // handleSubmit :: Panda -> fn(Panda)
-  const handleSubmit = R.cond([
-    [v.validateAll, onSuccess],
-    [R.always(true), onFailure],
-  ]);
-
-  return (
-    <section>
-      <fieldset>
-        <legend>CreatePanda.component.jsx</legend>
-        <PandaForm
-          data={panda}
-          disabled={disabled}
-          onChange={handleChange}
-          submitFailed={hasValidationErrors}
-        />
-        <button disabled={disabled} onClick={() => handleSubmit(panda)}>
-          Submit
-        </button>
-        <ValidationErrors {...v} />
-      </fieldset>
-    </section>
-  );
 };
 ```
 
