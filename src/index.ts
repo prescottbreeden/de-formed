@@ -1,21 +1,18 @@
 import {
-  GetAllErrors,
-  GetError,
-  GetFieldValid,
   ResetValidationState,
-  SetValidationState,
-  Validate,
-  ValidateAll,
-  ValidateIfTrue,
-  ValidateOnBlur,
-  ValidateOnChange,
-  ValidationFunction,
   ValidationSchema,
   ValidationState,
 } from './types';
-import { compose, prop } from './utilities';
+import { compose, prop, executeSideEffect, getValue } from './utilities';
+import {
+  calculateIsValid,
+  createValidateAll,
+  createValidationState,
+  isPropertyValid,
+  updatePropertyOnState
+} from './validation-functions';
+import { maybe } from './maybe';
 import * as R from 'ramda';
-import {createGetAllErrors, createGetError, createValidate, createValidateAll, createValidateAllIfTrue, createValidateIfTrue, createValidationState, isPropertyValid} from './validation-functions';
 
 // useCache :: none -> [f, g]
 const useCache = (initial: ValidationState) => {
@@ -24,12 +21,12 @@ const useCache = (initial: ValidationState) => {
     value = data;
     return data;
   }
-  const getValue = () => value;
-  return [getValue, setValue];
+  const retrieveValue = () => value;
+  return [retrieveValue, setValue];
 };
 
-export function VO<S>(validationSchema: ValidationSchema<S>) {
-  const [validationState, setValidationState] = compose(
+export function Validation<S>(validationSchema: ValidationSchema<S>) {
+  const [getValidationState, setValidationState] = compose(
     useCache,
     createValidationState,
   )(validationSchema);
@@ -41,258 +38,78 @@ export function VO<S>(validationSchema: ValidationSchema<S>) {
     )(validationSchema);
   };
 
-  const validate = createValidate(validationState, setValidationState);
+  // const validate = createValidate(getValidationState, setValidationState);
+  const validate = (property: keyof S, value: any) =>
+    maybe(value)
+      .map(updatePropertyOnState(validationSchema)(property as any))
+      .map(R.mergeRight(getValidationState()))
+      .map(executeSideEffect(setValidationState))
+      .map(isPropertyValid(property))
+      .chain(R.defaultTo(true));
+
   const validateAll = createValidateAll(
     validationSchema,
-    validationState,
+    getValidationState,
     setValidationState
   );
-  const validateAllIfTrue = createValidateAllIfTrue(
-    validationSchema,
-    validationState
-  );
-  const validateIfTrue = createValidateIfTrue(
-    validationState(),
-    setValidationState);
-  const getAllErrors = createGetAllErrors(validationState);
-  const getError = createGetError(validationState);
 
-  return {
+  const getError = (property: keyof S, vState = getValidationState()) => {
+    const error = maybe(vState)
+      .map(prop(property))
+      .map(prop('errors'))
+      .map(R.head);
+    return error.isJust ? error.join() : '';
+  }
+
+  const getAllErrors = (
+    property: keyof S,
+    vState = getValidationState(),
+  ) => {
+    const errors = maybe(vState).map(prop(property)).map(prop('errors'));
+    return errors.isJust ? errors.join() : [];
+  };
+
+  const gatherValidationErrors = (state: () => ValidationState) => 
+    Object.keys(getValue(state)).reduce(
+      (acc: string[], curr: string) => {
+        return getError(curr as keyof S)
+          ? [...acc, getError(curr as keyof S)]
+          : acc;
+      }, []);
+
+  const validationObject = {
     getAllErrors,
     getError,
+    isValid: null,
     resetValidationState,
-    validationState,
+    setValidationState,
     validate,
     validateAll,
-    validateAllIfTrue,
-    validateIfTrue,
-  }
-}
-
-export class Validation<S> {
-  private _validationSchema: ValidationSchema<S>;
-  private _validationState: ValidationState;
-
-  public get isValid(): boolean {
-    return this.allValid(this._validationState);
+    validationErrors: null,
+    validationState: null,
   }
 
-  public get validationErrors(): string[] {
-    const props = Object.keys(this._validationState);
-    const errors = R.reduce(
-      (acc: string[], curr: keyof S) => {
-        const err = this.getError(curr);
-        return err ? [...acc, err] : acc;
-      },
-      [],
-      props as (keyof S)[],
-    );
-    return errors;
-  }
+  Object.defineProperty(
+    validationObject,
+    'isValid', {
+      get: () => calculateIsValid(getValidationState),
+      enumerable: true,
+    });
 
-  public get validationState(): ValidationState {
-    return this._validationState;
-  }
+  Object.defineProperty(
+    validationObject,
+    'validationState', {
+      get: getValidationState,
+      enumerable: true,
+    });
 
+  Object.defineProperty(
+    validationObject,
+    'validationErrors', {
+      get: () => gatherValidationErrors(getValidationState),
+      enumerable: true,
+    });
 
-  /**
-   *  Resets the validation state.
-   */
-  public resetValidationState: ResetValidationState = (): void => {
-    this._validationState = createValidationState(this._validationSchema);
-  };
-
-  /**
-   *  Overrides the existing validation state with another. WARNING: this feature
-   *  is experimental and may be removed in future versions.
-   *  @param newValidationState ValidationState
-   */
-  public setValidationState: SetValidationState = (
-    newValidationState: ValidationState,
-  ): void => {
-    this._validationState = newValidationState;
-  };
-
-  private allValid = (state: ValidationState): boolean => {
-    const keys = Object.keys(state);
-    const valid = R.reduce(
-      (acc: boolean, current: string) => {
-        return acc ? isPropertyValid(current)(this._validationState) : acc;
-      },
-      true,
-      keys,
-    );
-    return valid;
-  };
-
-  /**
-   * Executes the value against all provided validation functions and updates
-   * the validation state.
-   * @param key string the name of the property being validated
-   * @param value any the value to be tested for validation
-   * @return true/false validation
-   */
-  private runAllValidators = (
-    property: keyof S,
-    state: S,
-  ): ValidationState => {
-    const runValidator = compose(
-      (func: ValidationFunction<S>) => func(state),
-      prop('validation'),
-    );
-    const bools: boolean[] = R.map(
-      runValidator,
-      prop(property, this._validationSchema),
-    );
-    const allValidationsValid: boolean = R.all(R.equals(true), bools);
-    const errors = bools.reduce((acc: string[], curr: boolean, idx: number) => {
-      const errorOf = compose(prop('errorMessage'), prop(idx), prop(property));
-      return curr ? acc : [...acc, errorOf(this._validationSchema)];
-    }, []);
-    return {
-      [property]: {
-        isValid: allValidationsValid,
-        errors: allValidationsValid ? [] : errors,
-      },
-    };
-  };
-
-  /**
-   * Get the current error stored for a property on the validation object.
-   * @param property the name of the property to retrieve
-   * @return string
-   */
-  public getError: GetError<S> = (property: keyof S): string => {
-    if (property in this._validationSchema) {
-      const val = compose(R.head, prop('errors'), prop(property));
-      return val(this._validationState) ? val(this._validationState) : '';
-    }
-    return '';
-  };
-
-  /**
-   * Get the current error stored for a property on the validation object.
-   * @param property the name of the property to retrieve
-   * @return string[]
-   */
-  public getAllErrors: GetAllErrors<S> = (property: keyof S): string[] => {
-    if (property in this._validationSchema) {
-      const val = compose(prop('errors'), prop(property));
-      return val(this._validationState);
-    }
-    return [];
-  };
-
-  /**
-   * Get the current valid state stored for a property on the validation object.
-   * If the property does not exist on the validationSchema getFieldValid will
-   * return true by default.
-   * @param property the name of the property to retrieve
-   * @return boolean
-   */
-  public getFieldValid: GetFieldValid<S> = (
-    property: keyof S,
-  ): boolean => {
-    if (property in this._validationSchema) {
-      return isPropertyValid(property)(this._validationState);
-    }
-    return true;
-  };
-
-  /**
-   * Executes a validation function on a value and updates the validation state.
-   * @param property string the name of the property being validated
-   * @param value any the value to be tested for validation
-   * @return boolean
-   */
-  public validate: Validate<S> = (
-    property: keyof S,
-    state: S,
-  ): boolean => {
-    if (property in this._validationSchema) {
-      const validations = this.runAllValidators(property, state);
-      this._validationState = {
-        ...this._validationState,
-        ...validations,
-      };
-      return isPropertyValid(property)(this._validationState);
-    }
-    return true;
-  };
-
-  /**
-   * Runs all validations against an object with all values and updates/returns
-   * isValid state.
-   * @param state any an object that contains all values to be validated
-   * @param props string[] property names to check (optional)
-   * @return boolean
-   */
-  public validateAll: ValidateAll<S> = (
-    state: S,
-    props: (keyof S)[] = Object.keys(this._validationSchema) as (keyof S)[],
-  ): boolean => {
-    const newState = R.reduce(
-      (acc: ValidationState, property: keyof S) => {
-        const r = this.runAllValidators(property, state);
-        return { ...acc, ...r };
-      },
-      {},
-      props,
-    );
-    this._validationState = newState;
-    return this.allValid(newState);
-  };
-
-  /**
-   * Updates the validation state if the validation succeeds.
-   * @param key string the name of the property being validated
-   * @param value any the value to be tested for validation
-   * @return boolean
-   */
-  public validateIfTrue: ValidateIfTrue<S> = (
-    property: keyof S,
-    state: S,
-  ): boolean => {
-    if (property in this._validationSchema) {
-      const validations = this.runAllValidators(property, state);
-      if (isPropertyValid(property)(validations)) {
-        const updated = { ...this._validationState, ...validations };
-        this._validationState = updated;
-      }
-      return isPropertyValid(property)(validations);
-    }
-    return true;
-  };
-
-  /**
-   * Create a new onBlur function that calls validate on a property matching the
-   * name of the event whenever a blur event happens.
-   * @param state the data controlling the form
-   * @return function :: (event: any) => any
-   */
-  public validateOnBlur: ValidateOnBlur<S> = (state: S) => {
-    return (event: any) => {
-      const { value, name } = event.target;
-      this.validate(name, {...state, [name]: value });
-    };
-  };
-
-  /**
-   * Create a new onChange function that calls validateIfTrue on a property
-   * matching the name of the event whenever a change event happens.
-   * @param onChange function to handle onChange events
-   * @param state the data controlling the form
-   * @return function :: (event: any) => any
-   */
-  public validateOnChange: ValidateOnChange<S> = (
-    onChange: (event: any) => any,
-    state: S,
-  ) => {
-    return (event: any) => {
-      const { value, name } = event.target;
-      this.validateIfTrue(name, { ...state, [name]: value });
-      return onChange(event);
-    };
-  };
+  return validationObject;
 }
 

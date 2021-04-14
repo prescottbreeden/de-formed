@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringIsMoreThan = exports.stringIsLessThan = exports.stringIsNotEmpty = exports.executeSideEffect = exports.prop = exports.compose = void 0;
+exports.getValue = exports.stringIsMoreThan = exports.stringIsLessThan = exports.stringIsNotEmpty = exports.executeSideEffect = exports.prop = exports.compose = void 0;
 const R = __importStar(require("ramda"));
 function curry(fn) {
     const arity = fn.length;
@@ -40,4 +40,7 @@ exports.stringIsLessThan = curry((num, str) => {
 exports.stringIsMoreThan = curry((num, str) => {
     return exports.compose(R.gt(R.__, num), R.length, R.trim)(str);
 });
+exports.getValue = (f) => {
+    return typeof f === 'function' ? f() : f;
+};
 //# sourceMappingURL=utilities.js.map

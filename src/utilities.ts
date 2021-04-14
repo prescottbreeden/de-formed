@@ -48,3 +48,7 @@ export const stringIsMoreThan = curry((num: number, str: string) => {
   )(str);
 });
 
+export const getValue = (f: any) => {
+  return typeof f === 'function' ? f() : f;
+}
+

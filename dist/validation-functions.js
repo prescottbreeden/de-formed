@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createGenerateValidationErrors = exports.isValid = exports.createGetFieldValid = exports.createGetError = exports.createGetAllErrors = exports.createValidateAllIfTrue = exports.createValidateAll = exports.createValidateIfTrue = exports.createValidate = exports.updatePropertyOnState = exports.createValidationState = exports.isPropertyValid = exports.stringIsNotEmpty = exports.stringIsMoreThan = exports.stringIsLessThan = exports.prop = exports.compose = void 0;
+exports.calculateIsValid = exports.createGetFieldValid = exports.createGetError = exports.createGetAllErrors = exports.createValidateAllIfTrue = exports.createValidateAll = exports.createValidateIfTrue = exports.createValidate = exports.updatePropertyOnState = exports.trace = exports.createValidationState = exports.isPropertyValid = exports.stringIsNotEmpty = exports.stringIsMoreThan = exports.stringIsLessThan = exports.prop = exports.compose = void 0;
 const R = __importStar(require("ramda"));
 const maybe_1 = require("./maybe");
 const utilities_1 = require("./utilities");
@@ -39,6 +39,10 @@ function createValidationState(schema) {
 }
 exports.createValidationState = createValidationState;
 ;
+exports.trace = (msg) => (x) => {
+    console.log(msg, x);
+    return x;
+};
 function updatePropertyOnState(validationSchema) {
     return R.curry((property, value) => {
         const valueIsValid = R.pipe(utilities_1.prop('validation'), R.applyTo(value));
@@ -84,7 +88,7 @@ function createValidateAll(validationSchema, validationState, setValidationState
             .map(R.reduce(reduceStateUpdates, {}))
             .map(R.mergeRight(validationState))
             .map(utilities_1.executeSideEffect(setValidationState))
-            .map(isValid)
+            .map(calculateIsValid)
             .chain(R.defaultTo(true));
     };
 }
@@ -100,7 +104,7 @@ function createValidateAllIfTrue(validationSchema, validationState) {
         return maybe_1.maybe(props)
             .map(R.reduce(reduceValids, {}))
             .map(R.mergeRight(validationState))
-            .map(isValid)
+            .map(calculateIsValid)
             .chain(R.defaultTo(true));
     };
 }
@@ -113,7 +117,7 @@ function createGetAllErrors(validationState) {
 }
 exports.createGetAllErrors = createGetAllErrors;
 function createGetError(validationState) {
-    return (property, vState = validationState()) => {
+    return (property, vState = utilities_1.getValue(validationState)) => {
         const error = maybe_1.maybe(vState)
             .map(utilities_1.prop(property))
             .map(utilities_1.prop('errors'))
@@ -129,19 +133,11 @@ function createGetFieldValid(validationState) {
     };
 }
 exports.createGetFieldValid = createGetFieldValid;
-function isValid(validationState) {
-    return Object.keys(validationState()).reduce((acc, curr) => {
-        return acc ? exports.isPropertyValid(curr)(validationState()) : acc;
+function calculateIsValid(validationState) {
+    return Object.keys(utilities_1.getValue(validationState)).reduce((acc, curr) => {
+        return acc ? exports.isPropertyValid(curr)(utilities_1.getValue(validationState)) : acc;
     }, true);
 }
-exports.isValid = isValid;
+exports.calculateIsValid = calculateIsValid;
 ;
-function createGenerateValidationErrors() {
-    return (state) => Object.keys(state()).reduce((acc, curr) => {
-        return createGetError(state)(curr)
-            ? [...acc, createGetError(state)(curr)]
-            : acc;
-    }, []);
-}
-exports.createGenerateValidationErrors = createGenerateValidationErrors;
 //# sourceMappingURL=validation-functions.js.map

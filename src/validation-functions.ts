@@ -3,6 +3,7 @@ import { maybe } from './maybe';
 import {
   compose,
   executeSideEffect,
+  getValue,
   prop,
   stringIsLessThan,
   stringIsMoreThan,
@@ -52,6 +53,10 @@ export function createValidationState<S>(schema: ValidationSchema<S>): Validatio
 // updateValidationState :: ValidationState -> ValidationState
 // export const updateValidationState = (setValidationState: SetValidationState) =>
 //   executeSideEffect(setValidationState);
+export const trace = (msg: string) => (x: any) => {
+  console.log(msg, x);
+  return x;
+}
 
 // updatePropertyOnState :: string -> x -> ValidationState
 export function updatePropertyOnState<S>(validationSchema: ValidationSchema<S>) {
@@ -124,7 +129,7 @@ export function createValidateAll<S>(
       .map(R.reduce(reduceStateUpdates, {}))
       .map(R.mergeRight(validationState))
       .map(executeSideEffect(setValidationState))
-      .map(isValid)
+      .map(calculateIsValid)
       .chain(R.defaultTo(true));
   };
 }
@@ -146,7 +151,7 @@ export function createValidateAllIfTrue<S>(
     return maybe(props)
       .map(R.reduce(reduceValids, {}))
       .map(R.mergeRight(validationState))
-      .map(isValid)
+      .map(calculateIsValid)
       .chain(R.defaultTo(true));
   };
 }
@@ -163,8 +168,8 @@ export function createGetAllErrors<S>(validationState: () => ValidationState): G
 }
 
 // getError :: validationState -> (string, ValidationState) -> string
-export function createGetError<S>(validationState: () => ValidationState): GetError<S> {
-  return (property: keyof S, vState = validationState()) => {
+export function createGetError<S>(validationState: () => ValidationState | ValidationState): GetError<S> {
+  return (property: keyof S, vState = getValue(validationState)) => {
     const error = maybe(vState)
       .map(prop(property))
       .map(prop('errors'))
@@ -183,21 +188,17 @@ export function createGetFieldValid<S>(validationState: ValidationState): GetFie
 }
 
 // isValid :: createIsValid -> ValidationState -> boolean
-export function isValid(validationState: () => ValidationState): boolean {
-  return Object.keys(validationState()).reduce((acc, curr) => {
-    return acc ? isPropertyValid(curr)(validationState()) : acc
+export function calculateIsValid(validationState: () => ValidationState | ValidationState): boolean {
+  return Object.keys(getValue(validationState)).reduce((acc, curr) => {
+    return acc ? isPropertyValid(curr)(getValue(validationState)) : acc
   }, true);
 };
 
-// generateValidationErrors :: ValidationState -> [string]
-export function createGenerateValidationErrors() {
-  return (state: () => ValidationState) => 
-    Object.keys(state()).reduce(
-      (acc: string[], curr: string) => {
-        return createGetError(state)(curr)
-          ? [...acc, createGetError(state)(curr)]
-          : acc;
-      }, [])
-}
-
+// export const gatherValidationErrors = (state: () => ValidationState) => 
+//     Object.keys(getValue(state)).reduce(
+//       (acc: string[], curr: string) => {
+//         return createGetError(getValue(state))(curr as keyof S)
+//           ? [...acc, createGetError(getValue(state))(curr as keyof S)]
+//           : acc;
+//       }, []);
 

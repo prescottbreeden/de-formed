@@ -1,9 +1,9 @@
 {
-  "name": "@de-formed/react-validations",
-  "version": "1.0.1",
+  "name": "@de-formed/node-validations",
+  "version": "0.0.1",
   "description": "Modular, Scalable, Function-driven Validations",
   "main": "dist/index",
-  "repository": "https://github.com/prescottbreeden/de-formed-validations-react.git",
+  "repository": "https://github.com/prescottbreeden/de-formed-refactors",
   "author": "prescottbreeden <prescott.breeden@gmail.com>",
   "license": "MIT",
   "private": false,
@@ -21,19 +21,10 @@
   },
   "dependencies": {
     "@types/ramda": "^0.27.30",
-    "@types/react": "^16.9.52",
     "ramda": "^0.27.1"
   },
-  "peerDependencies": {
-    "react": ">=16.8.0"
-  },
   "devDependencies": {
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.3.2",
-    "@testing-library/react-hooks": "^3.4.1",
-    "@testing-library/user-event": "^7.1.2",
     "@types/jest": "^26.0.14",
-    "@types/testing-library__dom": "^7.5.0",
     "jest": "^26.5.3",
     "prettier": "^2.1.2",
     "react-test-renderer": "^16.13.1",
@@ -54,14 +45,10 @@
     ]
   },
   "keywords": [
-    "composable",
-    "data",
-    "form",
+    "validations",
     "functional",
-    "hook",
+    "composable",
     "modular",
-    "react",
-    "validation",
-    "validations"
+    "node"
   ]
 }

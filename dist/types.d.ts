@@ -12,18 +12,13 @@ export declare type ValidateIfTrue<S> = (property: keyof S, value: S) => boolean
 export declare type ValidateOnBlur<S> = (value: S) => (event: any) => any;
 export declare type ValidateOnChange<S> = (onChange: (event: any) => any, value: S) => (event: any) => any;
 export interface ValidationObject<S> {
-    getError: GetError<S>;
     getAllErrors: GetAllErrors<S>;
-    getFieldValid: GetFieldValid<S>;
+    getError: GetError<S>;
     isValid: (state?: ValidationState) => boolean;
     resetValidationState: ResetValidationState;
     setValidationState: SetValidationState;
     validate: Validate<S>;
     validateAll: ValidateAll<S>;
-    validateAllIfTrue: ValidateAllIfTrue<S>;
-    validateIfTrue: ValidateIfTrue<S>;
-    validateOnBlur: ValidateOnBlur<S>;
-    validateOnChange: ValidateOnChange<S>;
     validationErrors: string[];
     validationState: ValidationState;
 }
