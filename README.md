@@ -1,4 +1,4 @@
-# @De-Formed Validations Constructors
+# @De-Formed
 
 @De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks. Use these to either create an implementation for a library that doesn't exist yet or to create your own variant that suits your needs.
 
