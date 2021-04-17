@@ -1,9 +1,9 @@
 {
-  "name": "@de-formed/constructors",
+  "name": "@de-formed/base",
   "version": "0.0.1",
   "description": "Constructor functions to generate validations for various implementations of @De-Formed.",
   "main": "dist/index",
-  "repository": "https://github.com/prescottbreeden/de-formed-constructors",
+  "repository": "https://github.com/prescottbreeden/de-formed",
   "author": "prescottbreeden <prescott.breeden@gmail.com>",
   "license": "MIT",
   "private": false,

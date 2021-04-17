@@ -22,6 +22,21 @@ import {
   ValidationState,
 } from './types';
 
+export {
+  GetAllErrors,
+  GetError,
+  GetFieldValid,
+  SetValidationState,
+  Validate,
+  ValidateAll,
+  ValidateAllIfTrue,
+  ValidateIfTrue,
+  ValidateOnBlur,
+  ValidateOnChange,
+  ValidationSchema,
+  ValidationState,
+};
+
 // isPropertyValid :: string -> ValidationState -> boolean
 export const isPropertyValid = <S>(property: keyof S) => compose(
   R.defaultTo(true),
