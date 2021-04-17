@@ -1,5 +1,5 @@
 {
-  "name": "@de-formed/validation-constructors",
+  "name": "@de-formed/constructors",
   "version": "0.0.1",
   "description": "Constructor functions to generate validations for various implementations of De-Formed.",
   "main": "dist/index",
