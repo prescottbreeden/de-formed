@@ -1,9 +1,9 @@
 {
-  "name": "@de-formed/node-validations",
+  "name": "@de-formed/validation-constructors",
   "version": "0.0.1",
-  "description": "Modular, Scalable, Function-driven Validations",
+  "description": "Constructor functions to generate validations for various implementations of De-Formed.",
   "main": "dist/index",
-  "repository": "https://github.com/prescottbreeden/de-formed-refactors",
+  "repository": "https://github.com/prescottbreeden/de-formed-constructors",
   "author": "prescottbreeden <prescott.breeden@gmail.com>",
   "license": "MIT",
   "private": false,

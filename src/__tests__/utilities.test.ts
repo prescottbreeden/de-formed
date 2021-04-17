@@ -1,10 +1,38 @@
 import {
-  stringIsLessThan,
-  stringIsMoreThan,
+  compose,
+  executeSideEffect,
+  prop,
+  readValue,
   stringIsNotEmpty
 } from '../utilities';
 
 describe('validation helpers', () => {
+  describe('compose', () => {
+    it('composes functions into one func', () => {
+      const add = (a: number) => (b: number) => a + b;
+      const add3 = compose(
+        add(1),
+        add(2),
+      );
+      expect(add3(1)).toBe(4);
+    });
+  });
+
+  describe('prop', () => {
+    it('returns undefined if object is null or undefined', () => {
+      expect(prop('dingo', null)).toBe(undefined);
+      expect(prop('dingo', undefined)).toBe(undefined);
+    });
+  });
+
+  describe('executeSideEffect', () => {
+    it('returns argument if function returns undefined', () => {
+      const sideEffect = (x: any) => undefined;
+      const funcy = executeSideEffect(sideEffect, 42);
+      expect(funcy).toBe(42);
+    });
+  });
+
   describe('stringIsNotEmpty', () => {
     it('returns true if string has length', () => {
       expect(stringIsNotEmpty("dingo")).toBe(true);
@@ -17,27 +45,12 @@ describe('validation helpers', () => {
     });
   });
 
-  describe('stringIsLessThan', () => {
-    it('returns true if string has length less than argument', () => {
-      expect(stringIsLessThan(6, "dingo")).toBe(true);
+  describe('readValue', () => {
+    it('returns a value if it is a value', () => {
+      expect(readValue("dingo")).toBe("dingo");
     });
-    it('returns false if string has more length than argument', () => {
-      expect(stringIsLessThan(0, "f")).toBe(false);
-    });
-    it('trims whitespace', () => {
-      expect(stringIsLessThan(2, " s")).toBe(true);
-    });
-  });
-
-  describe('stringIsMoreThan', () => {
-    it('returns true if string has more less than argument', () => {
-      expect(stringIsMoreThan(5, "dingo")).toBe(false);
-    });
-    it('returns false if string has more length than argument', () => {
-      expect(stringIsMoreThan(0, "f")).toBe(true);
-    });
-    it('trims whitespace', () => {
-      expect(stringIsMoreThan(1, " s")).toBe(false);
+    it('returns the function call if it is a function', () => {
+      expect(readValue(() => "dingo")).toBe("dingo");
     });
   });
 });

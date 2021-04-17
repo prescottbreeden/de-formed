@@ -20,9 +20,9 @@ export const compose = (...fns: any[]) => (...args: any[]) =>
 //  prop :: String -> {a} -> [a | Undefined]
 export const prop = curry((p: string, obj: any) => (obj ? obj[p] : undefined));
 
+// executeSideEffect :: (f -> any) -> x -> f(x) | x
 export const executeSideEffect = curry((f: any, x: any) => f(x) || x);
 
-// -- validation helper utils --
 // stringIsNotEmpty :: string -> boolean
 export const stringIsNotEmpty = compose(
   R.gt(R.__, 0),
@@ -30,25 +30,7 @@ export const stringIsNotEmpty = compose(
   R.trim
 );
 
-// stringIsLessThan :: number -> string -> boolean
-export const stringIsLessThan = curry((num: number, str: string) => {
-  return compose(
-    R.lt(R.__, num),
-    R.length,
-    R.trim
-  )(str);
-});
-
-// stringIsMoreThan :: number -> string -> boolean
-export const stringIsMoreThan = curry((num: number, str: string) => {
-  return compose(
-    R.gt(R.__, num),
-    R.length,
-    R.trim
-  )(str);
-});
-
-export const getValue = (f: any) => {
+export const readValue = (f: any) => {
   return typeof f === 'function' ? f() : f;
 }
 
