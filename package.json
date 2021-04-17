@@ -44,11 +44,5 @@
       "js"
     ]
   },
-  "keywords": [
-    "validations",
-    "functional",
-    "composable",
-    "modular",
-    "node"
-  ]
+  "keywords": []
 }

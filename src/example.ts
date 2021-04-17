@@ -13,6 +13,8 @@ import {
   createValidateAll,
   createValidateAllIfTrue,
   createValidateIfTrue,
+  createValidateOnBlur,
+  createValidateOnChange,
   createValidationState,
   gatherValidationErrors,
 } from '../src';
@@ -69,6 +71,20 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
       setValidationState
   );
 
+  const validateOnBlur =
+    createValidateOnBlur(
+      validationSchema,
+      getValidationState,
+      setValidationState
+  );
+
+  const validateOnChange =
+    createValidateOnChange(
+      validationSchema,
+      getValidationState,
+      setValidationState
+  );
+
   const getError = createGetError<S>(getValidationState);
   const getAllErrors = createGetAllErrors<S>(getValidationState)
   const getFieldValid = createGetFieldValid<S>(getValidationState);
@@ -84,6 +100,8 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
     validateAll,
     validateAllIfTrue,
     validateIfTrue,
+    validateOnBlur,
+    validateOnChange,
     validationErrors: null,
     validationState: null,
   }

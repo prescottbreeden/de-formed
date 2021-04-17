@@ -1,3 +1,4 @@
+import {maybe} from '../maybe';
 import {
   compose,
   executeSideEffect,
@@ -51,6 +52,15 @@ describe('validation helpers', () => {
     });
     it('returns the function call if it is a function', () => {
       expect(readValue(() => "dingo")).toBe("dingo");
+    });
+  });
+
+  describe('maybe', () => {
+    it('returns a value if it is just', () => {
+      expect(maybe(42).join()).toBe(42);
+    });
+    it('returns a maybe if it is not just', () => {
+      expect(maybe(null).join()).toStrictEqual(maybe(null));
     });
   });
 });

@@ -1,6 +1,6 @@
 import { ValidationSchema, ValidationState } from '../types';
 import { Validation } from '../example';
-import { compose, prop, stringIsNotEmpty } from '../utilities';
+import { compose, prop, readValue, stringIsNotEmpty } from '../utilities';
 import { defaultTo, equals, map, not } from 'ramda';
 
 type TestSchema = {
@@ -84,7 +84,8 @@ describe('useValidation tests', () => {
 
   it('handles a bogus schema', () => {
     const v = Validation(null as any);
-  })
+    expect(v.isValid).toBe(true);
+  });
 
   it('returns all functions and read-only objects defined by class', () => {
     const v = Validation(schema);
@@ -100,6 +101,8 @@ describe('useValidation tests', () => {
       'validateAll',
       'validateAllIfTrue',
       'validateIfTrue',
+      'validateOnBlur',
+      'validateOnChange',
       'validationErrors',
       'validationState',
     ]);
@@ -408,6 +411,68 @@ describe('useValidation tests', () => {
     });
   });
 
+  describe('createValidateOnBlur', () => {
+    it('creates a function that calls validate when given an event', () => {
+      const v = Validation(schema);
+      const handleBlur = v.validateOnBlur(defaultState);
+      const event = {
+        target: {
+          name: 'name',
+          value: 'bob'
+        },
+      };
+      expect(v.isValid).toBe(true);
+      handleBlur(event);
+      expect(v.isValid).toBe(false);
+    });
+  });
+
+  describe('createValidateOnChange', () => {
+    describe('creates a function that calls validateIfTrue when given an event', () => {
+      // useCache :: none -> [f, g]
+      function useCache<S>(initial: S) {
+        let value = initial;
+        const setValue = (data: S) => {
+          value = data;
+          return data;
+        }
+        const retrieveValue = () => value;
+        return [retrieveValue, setValue];
+      };
+
+      it('does not update falsey events', () => {
+        const v = Validation(schema);
+        const onChange = (x: any) => x;
+        const handleChange = v.validateOnChange(onChange, defaultState);
+        const event = {
+          target: {
+            name: 'name',
+            value: ''
+          },
+        };
+        handleChange(event);
+        expect(v.isValid).toBe(true);
+      });
+
+      it('updates truthy events', () => {
+        const [getState, ] = useCache(failingState);
+        const v = Validation(schema);
+        const onChange = (x: any) => x;
+        const handleChange = v.validateOnChange(
+          onChange,
+          readValue(getState)
+        );
+        const event = {
+          target: {
+            name: 'name',
+            value: 'notbob'
+          },
+        };
+        v.validate('name', failingState);
+        expect(v.getFieldValid('name')).toBe(false);
+        handleChange(event);
+        expect(v.getFieldValid('name')).toBe(true);
+      })
+    });
+  });
 });
-
-
