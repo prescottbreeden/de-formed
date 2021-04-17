@@ -1,6 +1,6 @@
 # @De-Formed Validations Constructors
 
-@De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks.
+@De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks. Use these to either create an implementation for a library that doesn't exist yet or to create your own variant that suits your needs.
 
 ## Current Implementations
 - [React Hook](https://github.com/prescottbreeden/de-formed-validations-react) 
@@ -15,7 +15,11 @@ npm i @de-formed/constructors
 ```
 ## Basic Usage
 
-### Step 1: Create a file to define your validations.
+### Decide how you want to provide state and reusability
+- `ValidationState` can be an object or a function that returns an object
+- `SetValidationState` is a function that updates the state
+- How you want to provide state is purely up to you.
+
 ```ts
 // example.ts
 // a function that generates a validation object for a node application
