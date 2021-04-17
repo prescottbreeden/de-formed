@@ -1,6 +1,10 @@
 # @De-Formed Validations Constructors
 
-@De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted libraries or frameworks.
+@De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks.
+
+## Current Implementations
+- [React Hook](https://github.com/prescottbreeden/de-formed-validations-react) 
+- [Node / VanillaJS](https://github.com/prescottbreeden/de-formed-validations-node) 
 
 ## Install
 ```
