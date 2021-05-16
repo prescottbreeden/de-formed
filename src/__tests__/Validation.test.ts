@@ -6,7 +6,8 @@ import { defaultTo, equals, map, not } from 'ramda';
 type TestSchema = {
   name: string;
   age: number;
-  dingo?: boolean;
+  dingo: boolean;
+  agreement: boolean;
 };
 
 const schema: ValidationSchema<TestSchema> = {
@@ -40,6 +41,12 @@ const schema: ValidationSchema<TestSchema> = {
       validation: (state: TestSchema) => state.age >= 18,
     },
   ],
+  agreement: [
+    {
+      error: 'Must accept terms.',
+      validation: prop('agreement')
+    },
+  ]
 };
 
 const mockValidationState: ValidationState = {
@@ -51,12 +58,17 @@ const mockValidationState: ValidationState = {
     isValid: true,
     errors: [],
   },
+  agreement: {
+    isValid: true,
+    errors: [],
+  }
 };
 
 const defaultState = {
   name: 'jack',
   dingo: false,
   age: 42,
+  agreement: true,
 };
 
 const failingState = {
@@ -472,6 +484,26 @@ describe('useValidation tests', () => {
         expect(v.getFieldValid('name')).toBe(false);
         handleChange(event);
         expect(v.getFieldValid('name')).toBe(true);
+      })
+
+      it('updates checked values', () => {
+        const [getState, ] = useCache(failingState);
+        const v = Validation(schema);
+        const onChange = (x: any) => x;
+        const handleChange = v.validateOnChange(
+          onChange,
+          readValue(getState)
+        );
+        const event = {
+          target: {
+            name: 'agreement',
+            checked: true
+          },
+        };
+        v.validate('agreement', { ...defaultState, agreement: false });
+        expect(v.getFieldValid('agreement')).toBe(false);
+        handleChange(event);
+        expect(v.getFieldValid('agreement')).toBe(true);
       })
     });
   });

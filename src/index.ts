@@ -2,6 +2,7 @@ import * as R from 'ramda';
 import { maybe } from './maybe';
 import {
   compose,
+  eventNameValue,
   executeSideEffect,
   readValue,
   prop,
@@ -37,13 +38,11 @@ export {
   ValidationState,
 };
 
-// isPropertyValid :: string -> ValidationState -> boolean
 export const isPropertyValid = <S>(property: keyof S) => compose(
   R.defaultTo(true),
   R.path([property as any, 'isValid'])
 );
 
-// createValidationState :: ValidationSchema -> ValidationState
 export function createValidationState<S>(
   validationSchema: ValidationSchema<S>
 ): ValidationState {
@@ -57,7 +56,6 @@ export function createValidationState<S>(
   return state.isJust ? state.join() : {};
 };
 
-// updateProperty :: string -> x -> ValidationState
 export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
   return R.curry((property: keyof S, value: any) => {
     const valueIsValid = R.pipe(prop('validation'), R.applyTo(value));
@@ -77,7 +75,6 @@ export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
   });
 }
 
-// createValidate :: validationState -> (string, value) -> boolean
 export function createValidate<S>(
   validationSchema: ValidationSchema<S>,
   validationState: ValidationState | (() => ValidationState),
@@ -91,7 +88,6 @@ export function createValidate<S>(
       .chain(R.defaultTo(true));
 }
 
-// createValidateIfTrue :: validationState (string , value) -> boolean
 export function createValidateIfTrue<S>(
   validationSchema: ValidationSchema<S>,
   validationState: ValidationState | (() => ValidationState),
@@ -112,7 +108,6 @@ export function createValidateIfTrue<S>(
   };
 }
 
-// createValidateAll :: (validationSchema, validationState) -> (x, [string]) -> boolean
 export function createValidateAll<S>(
   validationSchema: ValidationSchema<S>,
   validationState: ValidationState | (() => ValidationState),
@@ -134,7 +129,6 @@ export function createValidateAll<S>(
   };
 }
 
-// createValidateAllIfTrue :: (validationSchema, validationState) -> (x, [string]) -> boolean
 export function createValidateAllIfTrue<S>(
   validationSchema: ValidationSchema<S>,
   validationState: ValidationState | (() => ValidationState),
@@ -158,7 +152,6 @@ export function createValidateAllIfTrue<S>(
   };
 }
 
-// createGetAllErrors :: validationState -> (string, ValidationState) -> [string]
 export function createGetAllErrors<S>(
   validationState: ValidationState | (() => ValidationState)
 ): GetAllErrors<S> {
@@ -171,7 +164,6 @@ export function createGetAllErrors<S>(
   };
 }
 
-// createGetError :: validationState -> (string, ValidationState) -> string
 export function createGetError<S>(
   validationState: ValidationState | (() => ValidationState)
 ): GetError<S> {
@@ -185,7 +177,6 @@ export function createGetError<S>(
 
 }
 
-// createGetFieldValid :: validationState -> (string, ValidationState) -> boolean
 export function createGetFieldValid<S>(
   validationState: ValidationState | (() => ValidationState)
 ): GetFieldValid<S> {
@@ -193,7 +184,6 @@ export function createGetFieldValid<S>(
     isPropertyValid(property)(readValue(validationState))
 }
 
-// isValid :: createIsValid -> ValidationState -> boolean
 export function calculateIsValid(
   validationState: ValidationState | (() => ValidationState)
 ): boolean {
@@ -202,7 +192,6 @@ export function calculateIsValid(
   }, true);
 };
 
-// gatherValidationErrors :: ValidationState -> string[]
 export function gatherValidationErrors<S>(
   state: ValidationState | (() => ValidationState)
 ) {
@@ -228,11 +217,14 @@ export function createValidateOnBlur<S>(
   return (state: S) => (
     event: any,
   ): void => {
-    const { value, name } = event.target;
     createValidate(
       validationSchema,
       readValue(validationState),
-      setValidationState)(name as keyof S, { ...state, [name]: value });
+      setValidationState
+    )(R.path(['target', 'name'], event) as keyof S, {
+      ...state,
+      ...eventNameValue(event),
+    });
   };
 }
 
@@ -252,11 +244,14 @@ export function createValidateOnChange<S>(
     onChange: (event: any) => any,
     state: S,
   ) => (event: any): unknown => {
-    const { value, name } = event.target;
     createValidateIfTrue(
       validationSchema,
       readValue(validationState),
-      setValidationState)(name as keyof S, { ...state, [name]: value });
+      setValidationState,
+    )(R.path(['target', 'name'], event) as keyof S, {
+      ...state,
+      ...eventNameValue(event),
+    });
     return onChange(event);
   };
 }

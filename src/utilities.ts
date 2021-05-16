@@ -17,6 +17,9 @@ function curry(fn: any) {
 export const compose = (...fns: any[]) => (...args: any[]) =>
   fns.reduceRight((res, fn) => [fn.call(null, ...res)], args)[0];
 
+export const pipe = (...fns: any[]) => (...args: any[]) =>
+  fns.reduce((res, fn) => [fn.call(null, ...res)], args)[0];
+
 //  prop :: String -> {a} -> [a | Undefined]
 export const prop = curry((p: string, obj: any) => (obj ? obj[p] : undefined));
 
@@ -34,3 +37,10 @@ export const readValue = (f: any) => {
   return typeof f === 'function' ? f() : f;
 }
 
+export const eventNameValue = pipe(
+  prop('target'),
+  R.converge(R.objOf, [
+    prop('name'),
+    R.ifElse(prop('value'), prop('value'), prop('checked')),
+  ]),
+);
