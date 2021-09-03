@@ -1,14 +1,11 @@
-import {
-  ResetValidationState,
-  ValidationSchema,
-  ValidationState,
-} from './types';
+import { ValidationSchema, ValidationState } from './types';
 import { pipe } from './utilities';
 import {
   calculateIsValid,
   createGetAllErrors,
   createGetError,
   createGetFieldValid,
+  createResetValidationState,
   createValidate,
   createValidateAll,
   createValidateAllIfTrue,
@@ -19,15 +16,15 @@ import {
   gatherValidationErrors,
 } from '../src';
 
-// useCache :: none -> [f, g]
+// useCache :: ValidationState -> [(unit -> ValidationState), (ValidationState -> unit)]
 const useCache = (initial: ValidationState) => {
-  let value = initial;
-  const setValue = (data: ValidationState) => {
-    value = data;
+  let state = initial;
+  const setState = (data: ValidationState) => {
+    state = data;
     return data;
   };
-  const retrieveValue = () => value;
-  return [retrieveValue, setValue];
+  const retrieveState = () => state;
+  return [retrieveState, setState];
 };
 
 export function Validation<S>(validationSchema: ValidationSchema<S>) {
@@ -36,9 +33,10 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
     useCache,
   )(validationSchema);
 
-  const resetValidationState: ResetValidationState = (): void => {
-    return pipe(createValidationState, setValidationState)(validationSchema);
-  };
+  const resetValidationState = createResetValidationState(
+    validationSchema,
+    setValidationState,
+  );
 
   const validate = createValidate(
     validationSchema,

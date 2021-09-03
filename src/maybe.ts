@@ -1,8 +1,8 @@
 export class Maybe {
-  $value: any;
+  private _value: any;
 
   get isNothing() {
-    return this.$value === null || this.$value === undefined;
+    return this._value === null || this._value === undefined;
   }
 
   get isJust() {
@@ -10,7 +10,7 @@ export class Maybe {
   }
 
   constructor(x: any) {
-    this.$value = x;
+    this._value = x;
   }
 
   // ----- Pointed Maybe
@@ -20,11 +20,10 @@ export class Maybe {
 
   // ----- Functor Maybe
   map(fn: any) {
-    return this.isNothing ? this : Maybe.of(fn(this.$value));
+    return this.isNothing ? this : Maybe.of(fn(this._value));
   }
 
   join() {
-    return this.isNothing ? this : this.$value;
+    return this.isNothing ? this : this._value;
   }
-
 }
