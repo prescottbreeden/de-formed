@@ -43,7 +43,7 @@ export {
  * determines if a property on the validation schema is valid (true) or invalid
  * (false)
  * @param string
- * @returns boolean
+ * @return boolean
  */
 export const isPropertyValid = <S>(
   property: keyof S,
@@ -54,7 +54,7 @@ export const isPropertyValid = <S>(
  * Helper function to determine if all properties on the ValidationState are
  * valid.
  * @param  ValidationState
- * @returns boolean
+ * @return boolean
  */
 export function calculateIsValid(
   validationState: ValidationState | (() => ValidationState),
@@ -68,7 +68,7 @@ export function calculateIsValid(
  * Helper function to generate an array of errors grabing the first error for
  * all properties on the ValidationState
  * @param  ValidationState
- * @returns [string]
+ * @return [string]
  */
 export function gatherValidationErrors<S>(
   state: ValidationState | (() => ValidationState),
@@ -83,7 +83,7 @@ export function gatherValidationErrors<S>(
 /**
  * Creates the validation state based on the defined schema
  * @param  ValidationSchema
- * @returns ValidationState
+ * @return ValidationState
  */
 export function createValidationState<S>(
   validationSchema: ValidationSchema<S>,
@@ -106,7 +106,7 @@ export function createResetValidationState<S>(
 /**
  * Helper function to create updated properties to merge with the ValidationState
  * @param  ValidationSchema
- * @returns function(string, any): ValidationState
+ * @return function(string, any): ValidationState
  */
 export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
   return R.curry((property: keyof S, state: S): ValidationState => {
@@ -135,7 +135,7 @@ export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
  * @param  ValidationSchema
  * @param  ValidationState
  * @param  SetValidationState
- * @returns function(string, any): boolean
+ * @return function(string, any): boolean
  */
 export function createValidate<S>(
   validationSchema: ValidationSchema<S>,
@@ -159,7 +159,7 @@ export function createValidate<S>(
  * @param  ValidationSchema
  * @param  ValidationState
  * @param  SetValidationState
- * @returns function(string, any): boolean
+ * @return function(string, any): boolean
  */
 export function createValidateIfTrue<S>(
   validationSchema: ValidationSchema<S>,
@@ -190,7 +190,7 @@ export function createValidateIfTrue<S>(
  * @param  ValidationSchema
  * @param  ValidationState
  * @param  SetValidationState
- * @returns function(state, [string]): boolean
+ * @return function(state, [string]): boolean
  */
 export function createValidateAll<S>(
   validationSchema: ValidationSchema<S>,
@@ -218,7 +218,7 @@ export function createValidateAll<S>(
  * @param  ValidationSchema
  * @param  ValidationState
  * @param  SetValidationState
- * @returns function(string, [string]?): boolean
+ * @return function(string, [string]?): boolean
  */
 export function createValidateAllIfTrue<S>(
   validationSchema: ValidationSchema<S>,
@@ -246,7 +246,7 @@ export function createValidateAllIfTrue<S>(
  * retrieves all errors for a given property on the ValidationState.
  * Defaults to an empty array.
  * @param  ValidationState
- * @returns function(string, ValidationState?): [string]
+ * @return function(string, ValidationState?): [string]
  */
 export function createGetAllErrors<S>(
   validationState: ValidationState | (() => ValidationState),
@@ -264,7 +264,7 @@ export function createGetAllErrors<S>(
  * retrieves the first error for a given property on the ValidationState.
  * Defaults to an empty string.
  * @param  ValidationState
- * @returns function(string, ValidationState?): string
+ * @return function(string, ValidationState?): string
  */
 export function createGetError<S>(
   validationState: ValidationState | (() => ValidationState),
@@ -283,7 +283,7 @@ export function createGetError<S>(
  * which returns a boolean that represents if a given property on the
  * ValidationState is valid or not.
  * @param  ValidationState
- * @returns function(string, ValidationState?): boolean
+ * @return function(string, ValidationState?): boolean
  */
 export function createGetFieldValid<S>(
   validationState: ValidationState | (() => ValidationState),
@@ -295,7 +295,9 @@ export function createGetFieldValid<S>(
 /**
  * Returns an onBlur function that calls validate on a property matching the
  * name of the event whenever a blur event happens.
- * @param state the data controlling the form
+ * @param  ValidationSchema
+ * @param  ValidationState
+ * @param  SetValidationState
  * @return function(event: any): void
  */
 export function createValidateOnBlur<S>(
@@ -319,8 +321,9 @@ export function createValidateOnBlur<S>(
 /**
  * Returns an onChange function that calls validateIfTrue on a property
  * matching the name of the event whenever a change event happens.
- * @param onChange function to handle onChange events
- * @param state the data controlling the form
+ * @param  ValidationSchema
+ * @param  ValidationState
+ * @param  SetValidationState
  * @return function(event: any): unknown
  */
 export function createValidateOnChange<S>(
