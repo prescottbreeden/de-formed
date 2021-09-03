@@ -19,8 +19,11 @@ import {
   ValidateIfTrue,
   ValidateOnBlur,
   ValidateOnChange,
+  ValidationFunction,
+  ValidationProps,
   ValidationSchema,
   ValidationState,
+  ValidationStateProperty,
 } from './types';
 
 export {
@@ -48,7 +51,10 @@ export {
 export const isPropertyValid = <S>(
   property: keyof S,
 ): ((v: ValidationSchema<S>) => boolean) =>
-  pipe(R.path([property as any, 'isValid']), R.defaultTo(true));
+  R.pipe<ValidationSchema<S>, boolean | undefined, boolean>(
+    R.path([property as any, 'isValid']),
+    R.defaultTo(true),
+  );
 
 /**
  * Helper function to determine if all properties on the ValidationState are
@@ -61,7 +67,7 @@ export function calculateIsValid(
 ): boolean {
   const isValid = (acc: boolean, curr: string): boolean =>
     acc ? isPropertyValid(curr)(readValue(validationState)) : acc;
-  return pipe(readValue, R.keys, R.reduce(isValid, true))(validationState);
+  return Object.keys(readValue(validationState)).reduce(isValid, true);
 }
 
 /**
@@ -95,35 +101,41 @@ export function createValidationState<S>(
   return pipe(R.keys, R.reduce(buildState, {}))(validationSchema);
 }
 
-export function createResetValidationState<S>(
-  validationSchema: ValidationSchema<S>,
-  setValidationState: SetValidationState,
-): ResetValidationState {
-  return () =>
-    pipe(createValidationState, setValidationState)(validationSchema);
-}
-
 /**
- * Helper function to create updated properties to merge with the ValidationState
+ * Helper function to create updated properties to merge with the ValidationState.
+ * If the property doesn't exist it defaults to truthy state.
  * @param  ValidationSchema
  * @return function(string, any): ValidationState
  */
 export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
   return R.curry((property: keyof S, state: S): ValidationState => {
-    function valueIsValid(validationProperty: any): boolean {
-      return pipe(R.prop('validation'), R.applyTo(state))(validationProperty);
-    }
+    // valueIsValid :: string -> boolean
+    const valueIsValid = R.pipe(
+      R.prop<string, ValidationFunction<S>>('validation'),
+      R.applyTo(state),
+    );
+
+    // getErrorOrNone :: string -> string
     const getErrorOrNone = R.ifElse(
       valueIsValid,
       R.always(''),
       R.prop('error'),
     );
-    return pipe(
-      R.prop<any, ValidationSchema<S>>(property),
-      R.values,
+
+    // updateValidationStateProp :: string[] -> ValidationStateProperty
+    const updateValidationStateProp = (
+      errors: string[],
+    ): ValidationStateProperty => ({
+      errors,
+      isValid: Boolean(!errors.length),
+    });
+
+    return R.pipe(
+      R.prop<string, ValidationProps<S>[]>(property as any),
+      R.defaultTo([]),
       R.map(getErrorOrNone),
       R.filter(stringIsNotEmpty),
-      (errors: string[]) => ({ errors, isValid: Boolean(!errors.length) }),
+      updateValidationStateProp,
       R.assoc(property as any, R.__, {}),
     )(validationSchema);
   });
@@ -149,6 +161,22 @@ export function createValidate<S>(
       .map(executeSideEffect(setValidationState))
       .map(isPropertyValid(property));
     return valid.isJust ? valid.join() : true;
+  };
+}
+
+/**
+ * Creates a resetValidationState function that is expoised on the validationObject
+ * which resets the current validtaion state by overwriting it with the default
+ * truthy state.
+ * @param  ValidationSchema
+ * @return ValidationState
+ */
+export function createResetValidationState<S>(
+  validationSchema: ValidationSchema<S>,
+  setValidationState: SetValidationState,
+): ResetValidationState {
+  return () => {
+    setValidationState(createValidationState(validationSchema));
   };
 }
 
@@ -289,7 +317,7 @@ export function createGetFieldValid<S>(
   validationState: ValidationState | (() => ValidationState),
 ): GetFieldValid<S> {
   return (property: keyof S, vState = readValue(validationState)) =>
-    pipe(isPropertyValid(property))(vState);
+    R.pipe(isPropertyValid(property))(vState);
 }
 
 /**

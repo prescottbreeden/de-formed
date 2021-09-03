@@ -1,4 +1,4 @@
-import { ValidationSchema, ValidationState } from './types';
+import { ValidationObject, ValidationSchema, ValidationState } from './types';
 import { pipe } from './utilities';
 import {
   calculateIsValid,
@@ -78,11 +78,11 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
   const getAllErrors = createGetAllErrors<S>(getValidationState);
   const getFieldValid = createGetFieldValid<S>(getValidationState);
 
-  const validationObject = {
+  const validationObject: ValidationObject<S> = {
     getAllErrors,
     getError,
     getFieldValid,
-    isValid: null,
+    isValid: true,
     resetValidationState,
     setValidationState,
     validate,
@@ -91,8 +91,8 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
     validateIfTrue,
     validateOnBlur,
     validateOnChange,
-    validationErrors: null,
-    validationState: null,
+    validationErrors: [],
+    validationState: {},
   };
 
   Object.defineProperty(validationObject, 'isValid', {

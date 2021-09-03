@@ -48,7 +48,9 @@ export const readValue = (value: any) => {
  *  input: { target: { value: 'bob' }, name: 'firstName' }
  *  output: { firstName: 'bob' }
  */
-export function eventNameValue(event: any) {
+export function eventNameValue(event: any): {
+  [key: string]: string | number | boolean;
+} {
   return pipe(
     R.prop('target'),
     R.converge(R.objOf, [
