@@ -79,9 +79,11 @@ export function calculateIsValid(
 export function gatherValidationErrors<S>(
   state: ValidationState | (() => ValidationState),
 ) {
-  return Object.keys(readValue(state)).reduce((acc: string[], curr: string) => {
-    return createGetError<S>(readValue(state))(curr as keyof S)
-      ? [...acc, createGetError<S>(readValue(state))(curr as keyof S)]
+  const validationState = readValue(state);
+  const getFirstError = createGetError<S>(validationState);
+  return Object.keys(validationState).reduce((acc: string[], curr: string) => {
+    return getFirstError(curr as keyof S)
+      ? [...acc, getFirstError(curr as keyof S)]
       : acc;
   }, []);
 }
@@ -155,12 +157,12 @@ export function createValidate<S>(
   setValidationState: SetValidationState,
 ): Validate<S> {
   return (property: keyof S, value: S) => {
-    const valid = Maybe.of(value)
+    return Maybe.of(value)
       .map(updateProperty(validationSchema)(property as any))
       .map(R.mergeRight(readValue(validationState)))
       .map(executeSideEffect(setValidationState))
-      .map(isPropertyValid(property));
-    return valid.isJust ? valid.join() : true;
+      .map(isPropertyValid(property))
+      .join();
   };
 }
 
@@ -226,16 +228,16 @@ export function createValidateAll<S>(
   setValidationState: SetValidationState,
 ): ValidateAll<S> {
   return (value: any, props = Object.keys(validationSchema) as (keyof S)[]) => {
-    const updateProperties = (acc: ValidationState, property: string) => {
-      const updated = updateProperty(validationSchema)(property as any, value);
-      return { ...acc, ...updated };
-    };
-    const valid = Maybe.of(props)
+    const updateProperties = (acc: ValidationState, property: string) => ({
+      ...acc,
+      ...updateProperty(validationSchema)(property as any, value),
+    });
+    return Maybe.of(props)
       .map(R.reduce(updateProperties, readValue(validationState)))
       .map(R.mergeRight(readValue(validationState)))
       .map(executeSideEffect(setValidationState))
-      .map(calculateIsValid);
-    return valid.isJust ? valid.join() : true;
+      .map(calculateIsValid)
+      .join();
   };
 }
 
@@ -260,12 +262,12 @@ export function createValidateAllIfTrue<S>(
         ? { ...acc, ...updated }
         : { ...acc };
     };
-    const valid = Maybe.of(props)
+    return Maybe.of(props)
       .map(R.reduce(updateProperties, readValue(validationState)))
       .map(R.mergeRight(readValue(validationState)))
       .map(executeSideEffect(setValidationState))
-      .map(calculateIsValid);
-    return valid.isJust ? valid.join() : true;
+      .map(calculateIsValid)
+      .join();
   };
 }
 
