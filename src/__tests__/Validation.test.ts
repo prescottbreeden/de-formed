@@ -1,7 +1,7 @@
 import { ValidationSchema, ValidationState } from '../types';
 import { Validation } from '../example';
-import { compose, prop, readValue, stringIsNotEmpty } from '../utilities';
-import { defaultTo, equals, map, not } from 'ramda';
+import { pipe, readValue, stringIsNotEmpty } from '../utilities';
+import { defaultTo, equals, map, prop } from 'ramda';
 
 type TestSchema = {
   name: string;
@@ -14,19 +14,11 @@ const schema: ValidationSchema<TestSchema> = {
   name: [
     {
       error: 'Name is required.',
-      validation: compose(
-        stringIsNotEmpty,
-        defaultTo(''),
-        prop('name')
-      )
+      validation: pipe(prop('name'), defaultTo(''), stringIsNotEmpty),
     },
     {
       error: 'Cannot be bob.',
-      validation: compose(
-        not,
-        equals('bob'),
-        prop('name'),
-      )
+      validation: pipe(prop('name'), equals('bob'), equals(false)),
     },
     {
       error: 'Must be dingo.',
@@ -44,9 +36,9 @@ const schema: ValidationSchema<TestSchema> = {
   agreement: [
     {
       error: 'Must accept terms.',
-      validation: prop('agreement')
+      validation: prop('agreement'),
     },
-  ]
+  ],
 };
 
 const mockValidationState: ValidationState = {
@@ -61,7 +53,7 @@ const mockValidationState: ValidationState = {
   agreement: {
     isValid: true,
     errors: [],
-  }
+  },
 };
 
 const defaultState = {
@@ -76,7 +68,6 @@ const failingState = {
   name: 'bob',
   age: 15,
 };
-
 
 describe('useValidation tests', () => {
   it('should be defined', () => {
@@ -141,7 +132,7 @@ describe('useValidation tests', () => {
     });
   });
 
-    describe('getFieldValid', () => {
+  describe('getFieldValid', () => {
     it('returns true by default', () => {
       const v = Validation(schema);
       const output = v.getFieldValid('name');
@@ -158,7 +149,7 @@ describe('useValidation tests', () => {
       const v = Validation(schema);
       const state = {
         ...defaultState,
-        name: ''
+        name: '',
       };
       v.validate('name', state);
       const output = v.getFieldValid('name');
@@ -300,25 +291,25 @@ describe('useValidation tests', () => {
     it('handles missing properties', () => {
       const wonkySchema = {
         ...schema,
-        'canSave': [
+        canSave: [
           {
             error: 'you cannot save',
             validation: (state: any) => !!state.name,
-          }
+          },
         ],
-      }
+      };
       const v = Validation(wonkySchema);
       v.validateAllIfTrue(failingState);
       expect(v.getError('canSave' as keyof TestSchema)).toBe('');
     });
   });
 
-    describe('validateIfTrue', () => {
+  describe('validateIfTrue', () => {
     it('returns a boolean if key exists', () => {
       const v = Validation(schema);
       const state = {
         ...defaultState,
-        name: 'bob'
+        name: 'bob',
       };
       const output = v.validateIfTrue('name', state);
       expect(typeof output).toBe('boolean');
@@ -329,7 +320,7 @@ describe('useValidation tests', () => {
       const name = 'balls' as keyof TestSchema;
       const state = {
         ...defaultState,
-        name: 'bob'
+        name: 'bob',
       };
       const output = v.validateIfTrue(name, state);
       expect(output).toBe(true);
@@ -355,11 +346,11 @@ describe('useValidation tests', () => {
       const v = Validation(schema);
       const state = {
         ...defaultState,
-        name: 'bob'
+        name: 'bob',
       };
       const state2 = {
         ...defaultState,
-        name: 'jack'
+        name: 'jack',
       };
       const validationState = {
         ...mockValidationState,
@@ -430,7 +421,7 @@ describe('useValidation tests', () => {
       const event = {
         target: {
           name: 'name',
-          value: 'bob'
+          value: 'bob',
         },
       };
       expect(v.isValid).toBe(true);
@@ -447,10 +438,10 @@ describe('useValidation tests', () => {
         const setValue = (data: S) => {
           value = data;
           return data;
-        }
+        };
         const retrieveValue = () => value;
         return [retrieveValue, setValue];
-      };
+      }
 
       it('does not update falsey events', () => {
         const v = Validation(schema);
@@ -459,7 +450,7 @@ describe('useValidation tests', () => {
         const event = {
           target: {
             name: 'name',
-            value: ''
+            value: '',
           },
         };
         handleChange(event);
@@ -467,44 +458,38 @@ describe('useValidation tests', () => {
       });
 
       it('updates truthy events', () => {
-        const [getState, ] = useCache(failingState);
+        const [getState] = useCache(failingState);
         const v = Validation(schema);
         const onChange = (x: any) => x;
-        const handleChange = v.validateOnChange(
-          onChange,
-          readValue(getState)
-        );
+        const handleChange = v.validateOnChange(onChange, readValue(getState));
         const event = {
           target: {
             name: 'name',
-            value: 'notbob'
+            value: 'notbob',
           },
         };
         v.validate('name', failingState);
         expect(v.getFieldValid('name')).toBe(false);
         handleChange(event);
         expect(v.getFieldValid('name')).toBe(true);
-      })
+      });
 
       it('updates checked values', () => {
-        const [getState, ] = useCache(failingState);
+        const [getState] = useCache(failingState);
         const v = Validation(schema);
         const onChange = (x: any) => x;
-        const handleChange = v.validateOnChange(
-          onChange,
-          readValue(getState)
-        );
+        const handleChange = v.validateOnChange(onChange, readValue(getState));
         const event = {
           target: {
             name: 'agreement',
-            checked: true
+            checked: true,
           },
         };
         v.validate('agreement', { ...defaultState, agreement: false });
         expect(v.getFieldValid('agreement')).toBe(false);
         handleChange(event);
         expect(v.getFieldValid('agreement')).toBe(true);
-      })
+      });
     });
   });
 });

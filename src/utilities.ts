@@ -1,46 +1,33 @@
 import * as R from 'ramda';
 
-//  curry :: ((a, b, ...) -> c) -> a -> b -> ... -> c
-function curry(fn: any) {
-  const arity = fn.length;
+export const pipe =
+  (...fns: ((a: any) => any)[]) =>
+    (arg: any) =>
+      fns.reduce((acc, fn) => fn(acc), arg);
 
-  return function $curry(...args: any[]): any {
-    if (args.length < arity) {
-      return $curry.bind(null, ...args);
-    }
+// export function prop<T>(p: keyof T) {
+//   return (obj: T) => (obj ? obj[p] : undefined);
+// }
 
-    return fn.call(null, ...args);
-  };
+export const executeSideEffect = (fn: (arg: any) => void) => (arg: any) => {
+  fn(arg);
+  return arg;
+};
+
+export function stringIsNotEmpty(string: string): boolean {
+  return pipe(R.trim, R.length, R.gt(R.__, 0))(string);
 }
 
-//  compose :: ((a -> b), (b -> c),  ..., (y -> z)) -> a -> z
-export const compose = (...fns: any[]) => (...args: any[]) =>
-  fns.reduceRight((res, fn) => [fn.call(null, ...res)], args)[0];
+export const readValue = (value: any) => {
+  return typeof value === 'function' ? value() : value;
+};
 
-export const pipe = (...fns: any[]) => (...args: any[]) =>
-  fns.reduce((res, fn) => [fn.call(null, ...res)], args)[0];
-
-//  prop :: String -> {a} -> [a | Undefined]
-export const prop = curry((p: string, obj: any) => (obj ? obj[p] : undefined));
-
-// executeSideEffect :: (f -> any) -> x -> f(x) | x
-export const executeSideEffect = curry((f: any, x: any) => f(x) || x);
-
-// stringIsNotEmpty :: string -> boolean
-export const stringIsNotEmpty = compose(
-  R.gt(R.__, 0),
-  R.length,
-  R.trim
-);
-
-export const readValue = (f: any) => {
-  return typeof f === 'function' ? f() : f;
-}
-
-export const eventNameValue = pipe(
-  prop('target'),
-  R.converge(R.objOf, [
-    prop('name'),
-    R.ifElse(prop('value'), prop('value'), prop('checked')),
-  ]),
-);
+export function eventNameValue(event: any) {
+  return pipe(
+    R.prop('target'),
+    R.converge(R.objOf, [
+      R.prop('name'),
+      R.ifElse(R.prop('value'), R.prop('value'), R.prop('checked')),
+    ]),
+  )(event);
+};
