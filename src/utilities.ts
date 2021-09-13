@@ -1,24 +1,3 @@
-import * as R from 'ramda';
-
-/**
- *  @De-formed
- *  Internal utility function. Basic pipe function with looser typing.
- */
-export const pipe =
-  (...fns: ((a: any) => any)[]) =>
-  (arg: any) =>
-    fns.reduce((acc, fn) => fn(acc), arg);
-
-/**
- *  @De-formed
- *  Internal utility function. Wraps a function that returns unit
- *  and instead returns the argument.
- */
-export const executeSideEffect = (fn: (arg: any) => void) => (arg: any) => {
-  fn(arg);
-  return arg;
-};
-
 /**
  *  @De-formed
  *  Internal utility function.
@@ -26,7 +5,7 @@ export const executeSideEffect = (fn: (arg: any) => void) => (arg: any) => {
  *  @returns boolean
  */
 export function stringIsNotEmpty(str: string): boolean {
-  return pipe(R.trim, R.length, R.gt(R.__, 0))(str);
+  return str.trim().length > 0;
 }
 
 /**

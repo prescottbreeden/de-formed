@@ -1,6 +1,6 @@
 {
   "name": "@de-formed/base",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Constructor functions to generate validations for various implementations of @De-Formed.",
   "main": "dist/index",
   "repository": "https://github.com/prescottbreeden/de-formed",
@@ -19,10 +19,7 @@
     "version": "yarn format && git add .",
     "postversion": "git push && git push --tags"
   },
-  "dependencies": {
-    "@types/ramda": "^0.27.30",
-    "ramda": "^0.27.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^26.0.14",
     "jest": "^26.5.3",

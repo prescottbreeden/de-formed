@@ -1,5 +1,4 @@
 import { ValidationObject, ValidationSchema, ValidationState } from './types';
-import { pipe } from './utilities';
 import {
   calculateIsValid,
   createGetAllErrors,
@@ -15,23 +14,23 @@ import {
   createValidationState,
   gatherValidationErrors,
 } from '../src';
+import { readValue } from './utilities';
 
-// useCache :: ValidationState -> [(unit -> ValidationState), (ValidationState -> unit)]
-const useCache = (initial: ValidationState) => {
-  let state = initial;
-  const setState = (data: ValidationState) => {
+// Use whatever kind of statemanagement you like, or use something simple like this
+const useCache = (initial: ValidationState | (() => ValidationState)) => {
+  let state = readValue(initial);
+  const setValidationState = (data: ValidationState) => {
     state = data;
     return data;
   };
-  const retrieveState = () => state;
-  return [retrieveState, setState];
+  const getValidationState = () => state;
+  return { getValidationState, setValidationState };
 };
 
 export function Validation<S>(validationSchema: ValidationSchema<S>) {
-  const [getValidationState, setValidationState] = pipe(
-    createValidationState,
-    useCache,
-  )(validationSchema);
+  const { getValidationState, setValidationState } = useCache(() =>
+    createValidationState(validationSchema),
+  );
 
   const resetValidationState = createResetValidationState(
     validationSchema,

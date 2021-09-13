@@ -23,3 +23,13 @@
 - removed unnecessary utilities
 - added JSDocs
 - updated example
+
+### version 1.0.1:
+- removed Ramda's pipe
+
+### version 1.0.2:
+
+- removed all dependencies (including Ramda)
+- removed Maybe.ts
+- decreased package size
+- refactored code

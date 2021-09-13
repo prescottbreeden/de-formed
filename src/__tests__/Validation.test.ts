@@ -1,7 +1,6 @@
 import { ValidationSchema, ValidationState } from '../types';
 import { Validation } from '../example';
-import { pipe, readValue, stringIsNotEmpty } from '../utilities';
-import { defaultTo, equals, map, prop } from 'ramda';
+import { readValue, stringIsNotEmpty } from '../utilities';
 
 type TestSchema = {
   name: string;
@@ -14,11 +13,11 @@ const schema: ValidationSchema<TestSchema> = {
   name: [
     {
       error: 'Name is required.',
-      validation: pipe(prop('name'), defaultTo(''), stringIsNotEmpty),
+      validation: ({ name }) => stringIsNotEmpty(name),
     },
     {
       error: 'Cannot be bob.',
-      validation: pipe(prop('name'), equals('bob'), equals(false)),
+      validation: ({ name }) => name !== 'bob',
     },
     {
       error: 'Must be dingo.',
@@ -36,7 +35,7 @@ const schema: ValidationSchema<TestSchema> = {
   agreement: [
     {
       error: 'Must accept terms.',
-      validation: prop('agreement'),
+      validation: ({ agreement }) => Boolean(agreement),
     },
   ],
 };
@@ -267,7 +266,7 @@ describe('useValidation tests', () => {
     it('handles nested validation reductions', () => {
       const data = [defaultState, defaultState, defaultState];
       const v = Validation(schema);
-      const output = map(v.validateAllIfTrue, data);
+      const output = data.map((s) => v.validateAllIfTrue(s));
       expect(output).toStrictEqual([true, true, true]);
     });
     it('validates a subsection of keys', () => {
