@@ -154,9 +154,8 @@ export class BaseValidation<S> implements ValidationObject<S> {
    * boolean.
    */
   validateIfTrue: ValidateIfTrue<S> = (property: keyof S, value: S) => {
-    const state = readValue(this.state);
     const updatedState = {
-      ...state,
+      ...readValue(this.state),
       [property]: this.updateProperty(property, value),
     };
     const valid = this.isPropertyValid(property, updatedState);
@@ -175,11 +174,10 @@ export class BaseValidation<S> implements ValidationObject<S> {
     value: any,
     props = Object.keys(this.schema) as (keyof S)[],
   ) => {
-    const state = readValue(this.state);
     const updatedState = props.reduce<ValidationState>((acc, property) => {
       acc[property as string] = this.updateProperty(property, value);
       return acc;
-    }, state);
+    }, readValue(this.state));
     this.setValidationState(updatedState);
     return this.calculateIsValid(updatedState);
   };
@@ -192,14 +190,13 @@ export class BaseValidation<S> implements ValidationObject<S> {
     value: any,
     props = Object.keys(this.schema) as (keyof S)[],
   ) => {
-    const state = readValue(this.state);
     const updatedState = props.reduce<ValidationState>((acc, property) => {
       const updated = this.updateProperty(property, value);
       if (updated.isValid) {
         acc[property as string] = updated;
       }
       return acc;
-    }, state);
+    }, readValue(this.state));
     this.setValidationState(updatedState);
     return this.calculateIsValid(updatedState);
   };
