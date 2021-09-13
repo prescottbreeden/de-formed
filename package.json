@@ -1,6 +1,6 @@
 {
   "name": "@de-formed/base",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Constructor functions to generate validations for various implementations of @De-Formed.",
   "main": "dist/index",
   "repository": "https://github.com/prescottbreeden/de-formed",
