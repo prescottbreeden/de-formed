@@ -33,3 +33,7 @@
 - removed Maybe.ts
 - decreased package size
 - refactored code
+
+### version 2.0.0
+- removed more than 50% of code that was redundant
+- converted functions to a BaseValidation class
