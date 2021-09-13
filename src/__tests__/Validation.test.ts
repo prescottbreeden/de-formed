@@ -89,27 +89,6 @@ describe('useValidation tests', () => {
     expect(v.isValid).toBe(true);
   });
 
-  it('returns all functions and read-only objects defined by class', () => {
-    const v = Validation(schema);
-    expect(v.validationState).toStrictEqual(mockValidationState);
-    expect(Object.keys(v)).toStrictEqual([
-      'getAllErrors',
-      'getError',
-      'getFieldValid',
-      'isValid',
-      'resetValidationState',
-      'setValidationState',
-      'validate',
-      'validateAll',
-      'validateAllIfTrue',
-      'validateIfTrue',
-      'validateOnBlur',
-      'validateOnChange',
-      'validationErrors',
-      'validationState',
-    ]);
-  });
-
   describe('getError', () => {
     it('returns empty string by default', () => {
       const v = Validation(schema);
