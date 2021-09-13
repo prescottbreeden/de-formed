@@ -51,10 +51,7 @@ export {
 export const isPropertyValid = <S>(
   property: keyof S,
 ): ((v: ValidationSchema<S>) => boolean) =>
-  R.pipe<ValidationSchema<S>, boolean | undefined, boolean>(
-    R.path([property as any, 'isValid']),
-    R.defaultTo(true),
-  );
+  pipe(R.path([property as any, 'isValid']), R.defaultTo(true));
 
 /**
  * Helper function to determine if all properties on the ValidationState are
@@ -112,7 +109,7 @@ export function createValidationState<S>(
 export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
   return R.curry((property: keyof S, state: S): ValidationState => {
     // valueIsValid :: string -> boolean
-    const valueIsValid = R.pipe(
+    const valueIsValid = pipe(
       R.prop<string, ValidationFunction<S>>('validation'),
       R.applyTo(state),
     );
@@ -132,7 +129,7 @@ export function updateProperty<S>(validationSchema: ValidationSchema<S>) {
       isValid: Boolean(!errors.length),
     });
 
-    return R.pipe(
+    return pipe(
       R.prop<string, ValidationProps<S>[]>(property as any),
       R.defaultTo([]),
       R.map(getErrorOrNone),
@@ -319,7 +316,7 @@ export function createGetFieldValid<S>(
   validationState: ValidationState | (() => ValidationState),
 ): GetFieldValid<S> {
   return (property: keyof S, vState = readValue(validationState)) =>
-    R.pipe(isPropertyValid(property))(vState);
+    pipe(isPropertyValid(property))(vState);
 }
 
 /**
