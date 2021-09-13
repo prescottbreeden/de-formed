@@ -77,5 +77,9 @@ describe('validation helpers', () => {
       };
       expect(eventNameValue(event)).toStrictEqual({ title: false });
     });
+    it('returns an error if event has no target property', () => {
+      const event = { };
+      expect(eventNameValue(event)).toStrictEqual({ error: "unable to parse values" });
+    });
   });
 });
