@@ -51,11 +51,10 @@ export const readValue = (value: any) => {
 export function eventNameValue(event: any): {
   [key: string]: string | number | boolean;
 } {
-  return pipe(
-    R.prop('target'),
-    R.converge(R.objOf, [
-      R.prop('name'),
-      R.ifElse(R.prop('value'), R.prop('value'), R.prop('checked')),
-    ]),
-  )(event);
+  if (event.target) {
+    const { name, checked, type, value } = event.target;
+    if (type === 'checkbox') return { [name]: checked };
+    return { [name]: value };
+  }
+  return { error: 'unable to parse values' };
 }

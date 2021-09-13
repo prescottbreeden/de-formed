@@ -1,5 +1,6 @@
 import { Maybe } from '../maybe';
 import {
+  eventNameValue,
   executeSideEffect,
   pipe,
   readValue,
@@ -50,6 +51,31 @@ describe('validation helpers', () => {
     });
     it('returns a maybe if it is not just', () => {
       expect(Maybe.of(null).join()).toStrictEqual(Maybe.of(null));
+    });
+  });
+
+  describe('eventNameValue', () => {
+    it('returns the value of a text event', () => {
+      const event = {
+        target: {
+          name: 'title',
+          checked: false,
+          type: 'text',
+          value: '',
+        },
+      };
+      expect(eventNameValue(event)).toStrictEqual({ title: '' });
+    });
+    it('returns the value of a checkbox event', () => {
+      const event = {
+        target: {
+          name: 'title',
+          checked: false,
+          type: 'checkbox',
+          value: '',
+        },
+      };
+      expect(eventNameValue(event)).toStrictEqual({ title: false });
     });
   });
 });

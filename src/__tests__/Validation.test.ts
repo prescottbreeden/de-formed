@@ -472,6 +472,7 @@ describe('useValidation tests', () => {
           target: {
             name: 'agreement',
             checked: true,
+            type: 'checkbox',
           },
         };
         v.validate('agreement', { ...defaultState, agreement: false });
