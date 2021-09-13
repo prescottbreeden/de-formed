@@ -8,10 +8,10 @@
 
 ## Install
 ```
-yarn add @de-formed/constructors
+yarn add @de-formed/base
 ```
 ```
-npm i @de-formed/constructors
+npm i @de-formed/base
 ```
 ## Basic Usage
 
