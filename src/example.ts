@@ -1,27 +1,113 @@
-import { ValidationSchema, ValidationState } from './types';
-import { createValidationState, BaseValidation } from '../src';
+import { ValidationObject, ValidationSchema, ValidationState } from './types';
+import {
+  calculateIsValid,
+  createGetAllErrors,
+  createGetError,
+  createGetFieldValid,
+  createResetValidationState,
+  createValidate,
+  createValidateAll,
+  createValidateAllIfTrue,
+  createValidateIfTrue,
+  createValidateOnBlur,
+  createValidateOnChange,
+  createValidationState,
+  gatherValidationErrors,
+} from '../src';
 import { readValue } from './utilities';
 
-// Use whatever kind of state management you like, this is a simple example
+// Use whatever kind of statemanagement you like, or use something simple like this
 const useCache = (initial: ValidationState | (() => ValidationState)) => {
   let state = readValue(initial);
   const setValidationState = (data: ValidationState) => {
     state = data;
     return data;
   };
-  const getValidationState = (): ValidationState => state;
+  const getValidationState = () => state;
   return { getValidationState, setValidationState };
 };
 
-// Once you have your state management plan, create a function that accepts a
-// schema and injects your state
 export function Validation<S>(validationSchema: ValidationSchema<S>) {
   const { getValidationState, setValidationState } = useCache(() =>
     createValidationState(validationSchema),
   );
-  return new BaseValidation(
+
+  const resetValidationState = createResetValidationState(
+    validationSchema,
+    setValidationState,
+  );
+
+  const validate = createValidate(
     validationSchema,
     getValidationState,
     setValidationState,
   );
+
+  const validateAll = createValidateAll(
+    validationSchema,
+    getValidationState,
+    setValidationState,
+  );
+
+  const validateAllIfTrue = createValidateAllIfTrue(
+    validationSchema,
+    getValidationState,
+    setValidationState,
+  );
+
+  const validateIfTrue = createValidateIfTrue(
+    validationSchema,
+    getValidationState,
+    setValidationState,
+  );
+
+  const validateOnBlur = createValidateOnBlur(
+    validationSchema,
+    getValidationState,
+    setValidationState,
+  );
+
+  const validateOnChange = createValidateOnChange(
+    validationSchema,
+    getValidationState,
+    setValidationState,
+  );
+
+  const getError = createGetError<S>(getValidationState);
+  const getAllErrors = createGetAllErrors<S>(getValidationState);
+  const getFieldValid = createGetFieldValid<S>(getValidationState);
+
+  const validationObject: ValidationObject<S> = {
+    getAllErrors,
+    getError,
+    getFieldValid,
+    isValid: true,
+    resetValidationState,
+    setValidationState,
+    validate,
+    validateAll,
+    validateAllIfTrue,
+    validateIfTrue,
+    validateOnBlur,
+    validateOnChange,
+    validationErrors: [],
+    validationState: {},
+  };
+
+  Object.defineProperty(validationObject, 'isValid', {
+    get: () => calculateIsValid(getValidationState),
+    enumerable: true,
+  });
+
+  Object.defineProperty(validationObject, 'validationState', {
+    get: getValidationState,
+    enumerable: true,
+  });
+
+  Object.defineProperty(validationObject, 'validationErrors', {
+    get: () => gatherValidationErrors(getValidationState),
+    enumerable: true,
+  });
+
+  return validationObject;
 }
