@@ -17,18 +17,20 @@ import {
 import { readValue } from './utilities';
 
 // Use whatever kind of statemanagement you like, or use something simple like this
-const useCache = (initial: ValidationState | (() => ValidationState)) => {
+const useCache = (
+  initial: ValidationState | (() => ValidationState),
+): [() => ValidationState, (data: ValidationState) => ValidationState] => {
   let state = readValue(initial);
   const setValidationState = (data: ValidationState) => {
     state = data;
     return data;
   };
   const getValidationState = () => state;
-  return { getValidationState, setValidationState };
+  return [getValidationState, setValidationState];
 };
 
 export function Validation<S>(validationSchema: ValidationSchema<S>) {
-  const { getValidationState, setValidationState } = useCache(() =>
+  const [getValidationState, setValidationState] = useCache(
     createValidationState(validationSchema),
   );
 
