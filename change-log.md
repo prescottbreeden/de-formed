@@ -37,3 +37,7 @@
 ### version 2.0.0
 - removed more than 50% of code that was redundant
 - converted functions to a BaseValidation class
+
+### version 2.0.2
+- removed more than 50% of code that was redundant
+- converted back to functions - class had rendering problems in react
