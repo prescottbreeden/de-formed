@@ -1,6 +1,6 @@
 {
   "name": "@de-formed/base",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Base Validation Class to generate validations for various implementations of @De-Formed.",
   "main": "dist/index",
   "repository": "https://github.com/prescottbreeden/de-formed",
