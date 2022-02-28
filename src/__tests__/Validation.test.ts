@@ -29,7 +29,7 @@ const schema: ValidationSchema<TestSchema> = {
   age: [
     {
       error: 'Must be 18.',
-      validation: (state: TestSchema) => state.age >= 18,
+      validation: ({ age }) => age >= 18,
     },
   ],
   agreement: [
@@ -40,7 +40,7 @@ const schema: ValidationSchema<TestSchema> = {
   ],
 };
 
-const mockValidationState: ValidationState = {
+const mockValidationState: ValidationState<Partial<TestSchema>> = {
   name: {
     isValid: true,
     errors: [],
@@ -84,8 +84,8 @@ describe('useValidation tests', () => {
     expect(typeof v.validationState).toBe('object');
   });
 
-  it('handles a bogus schema', () => {
-    const v = Validation(null as any);
+  it('handles an undefined schema', () => {
+    const v = Validation();
     expect(v.isValid).toBe(true);
   });
 
@@ -185,7 +185,7 @@ describe('useValidation tests', () => {
     });
     it('updates the validationState when validation fails', () => {
       const v = Validation(schema);
-      const validationState: ValidationState = {
+      const validationState: ValidationState<Partial<TestSchema>> = {
         ...mockValidationState,
         name: {
           isValid: false,

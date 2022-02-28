@@ -1,5 +1,7 @@
 export type ValidationFunction<S> = (value: S) => boolean;
-export type SetValidationState = (validationState: ValidationState) => void;
+export type SetValidationState<S> = (
+  validationState: ValidationState<S>,
+) => void;
 export type GetAllErrors<S> = (property: keyof S) => string[];
 export type GetError<S> = (property: keyof S) => string;
 export type GetFieldValid<S> = (property: keyof S) => boolean;
@@ -20,7 +22,7 @@ export interface ValidationObject<S> {
   getFieldValid: GetFieldValid<S>;
   isValid: boolean;
   resetValidationState: ResetValidationState;
-  setValidationState: SetValidationState;
+  setValidationState: SetValidationState<S>;
   validate: Validate<S>;
   validateAll: ValidateAll<S>;
   validateAllIfTrue: ValidateAllIfTrue<S>;
@@ -28,7 +30,7 @@ export interface ValidationObject<S> {
   validateOnBlur: ValidateOnBlur<S>;
   validateOnChange: ValidateOnChange<S>;
   validationErrors: string[];
-  validationState: ValidationState;
+  validationState: ValidationState<S>;
 }
 
 export interface ValidationProps<S> {
@@ -45,6 +47,8 @@ export interface ValidationStateProperty {
   errors: string[];
 }
 
-export interface ValidationState {
-  [key: string]: ValidationStateProperty;
-}
+export type ValidationState<S extends {}> = {
+  [key in keyof S]: ValidationStateProperty;
+};
+
+export type EventName = { [key: string]: string | number | boolean };

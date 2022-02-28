@@ -16,12 +16,15 @@ import {
 } from '../src';
 import { readValue } from './utilities';
 
-// Use whatever kind of statemanagement you like, or use something simple like this
-const useCache = (
-  initial: ValidationState | (() => ValidationState),
-): [() => ValidationState, (data: ValidationState) => ValidationState] => {
+// Use whatever kind of state-management you like, or use something simple like this
+const useCache = <S>(
+  initial: ValidationState<S> | (() => ValidationState<S>),
+): [
+  () => ValidationState<S>,
+  (data: ValidationState<S>) => ValidationState<S>,
+] => {
   let state = readValue(initial);
-  const setValidationState = (data: ValidationState) => {
+  const setValidationState = (data: ValidationState<S>) => {
     state = data;
     return data;
   };
@@ -29,7 +32,7 @@ const useCache = (
   return [getValidationState, setValidationState];
 };
 
-export function Validation<S>(validationSchema: ValidationSchema<S>) {
+export function Validation<S>(validationSchema: ValidationSchema<S> = {}) {
   const [getValidationState, setValidationState] = useCache(
     createValidationState(validationSchema),
   );
@@ -93,7 +96,7 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
     validateOnBlur,
     validateOnChange,
     validationErrors: [],
-    validationState: {},
+    validationState: {} as any, // overwritten below
   };
 
   Object.defineProperty(validationObject, 'isValid', {

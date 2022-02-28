@@ -32,7 +32,7 @@ describe('validation helpers', () => {
           value: '',
         },
       };
-      expect(eventNameValue(event)).toStrictEqual({ title: '' });
+      expect(eventNameValue(event as any)).toStrictEqual({ title: '' });
     });
     it('returns the value of a checkbox event', () => {
       const event = {
@@ -43,11 +43,11 @@ describe('validation helpers', () => {
           value: '',
         },
       };
-      expect(eventNameValue(event)).toStrictEqual({ title: false });
+      expect(eventNameValue(event as any)).toStrictEqual({ title: false });
     });
     it('returns an error if event has no target property', () => {
       const event = {};
-      expect(eventNameValue(event)).toStrictEqual({
+      expect(eventNameValue(event as any)).toStrictEqual({
         error: 'unable to parse values',
       });
     });
