@@ -29,11 +29,12 @@ jobs:
     - name: yarn install, build, and test
       run: |
         yarn
-        yarn test
+        yarn test --coverage
     - name: Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
+        flags: unittests
         name: codecov-umbrella # optional
         fail_ci_if_error: true # optional (default = false)
         verbose: true # optional (default = false)
