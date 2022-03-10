@@ -1,4 +1,5 @@
-import {eventNameValue, readValue, stringIsNotEmpty, generateError} from '../src/utilities';
+import { readValue, stringIsNotEmpty, generateError } from '../src/utilities';
+import { eventNameValue } from '../src';
 
 describe('validation helpers', () => {
   describe('stringIsNotEmpty', () => {
@@ -32,7 +33,7 @@ describe('validation helpers', () => {
           value: '',
         },
       };
-      expect(eventNameValue(event)).toStrictEqual({title: ''});
+      expect(eventNameValue(event)).toStrictEqual({ title: '' });
     });
     it('returns the value of a checkbox event', () => {
       const event = {
@@ -43,37 +44,41 @@ describe('validation helpers', () => {
           value: '',
         },
       };
-      expect(eventNameValue(event)).toStrictEqual({title: false});
+      expect(eventNameValue(event)).toStrictEqual({ title: false });
     });
     it('throws an error if event has no target property', () => {
       const event = {};
       const willThrowError = () => {
-        eventNameValue(event)
-      }
+        eventNameValue(event);
+      };
       expect(willThrowError).toThrow(
-        Error(`"eventNameValue" cannot read object ${event} because it does not have a target property.`)
-      )
+        Error(
+          `"eventNameValue" cannot read object ${event} because it does not have a target property.`,
+        ),
+      );
     });
     it('throws an error if event is nullish', () => {
       const event = undefined;
       const willThrowError = () => {
-        eventNameValue(event)
-      }
+        eventNameValue(event);
+      };
       expect(willThrowError).toThrow(
-        Error(`"eventNameValue" cannot read object ${event} because it does not have a target property.`)
-      )
-    })
+        Error(
+          `"eventNameValue" cannot read object ${event} because it does not have a target property.`,
+        ),
+      );
+    });
   });
 
   describe('generateError', () => {
     it('returns a string if given a string', () => {
-      const result = generateError({name: 'bob ross'})('bob ross is awesome')
-      expect(result).toBe('bob ross is awesome')
-    })
+      const result = generateError({ name: 'bob ross' })('bob ross is awesome');
+      expect(result).toBe('bob ross is awesome');
+    });
     it('returns a string if given a function', () => {
-      const error = ({name}: any) => `${name} is nifty`
-      const result = generateError({name: 'bob ross'})(error)
-      expect(result).toBe('bob ross is nifty')
-    })
-  })
+      const error = ({ name }: any) => `${name} is nifty`;
+      const result = generateError({ name: 'bob ross' })(error);
+      expect(result).toBe('bob ross is nifty');
+    });
+  });
 });
