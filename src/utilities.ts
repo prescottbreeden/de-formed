@@ -1,22 +1,32 @@
 /**
  *  @De-formed
- *  Internal utility function.
- *  @param string
- *  @returns boolean
- */
-export function stringIsNotEmpty(str: string): boolean {
-  return str.trim().length > 0;
-}
-
-/**
- *  @De-formed
  *  Internal utility function. Takes an argument and if that argument is a
  *  function then it will call it with no parameters, otherwise it will just
  *  return the argument.
  */
-export const readValue = (value: any) => {
+export const readValue = <A>(value: A) => {
   return typeof value === 'function' ? value() : value;
 };
+
+/**
+ *  @De-formed
+ *  Internal utility function.
+ */
+export const stringIsNotEmpty = (str: string): boolean => {
+  return str.trim().length > 0;
+}
+
+/**
+ * @De-Formed
+ * Internal Utility. Function that takes either a string or a function stransforming a form state
+ * to a string to generate an error for the validation state.
+ */
+export const generateError = <S>(state: S) => (
+  s: string | ((state: S) => string)
+) => {
+  return typeof s === 'function' ? s(state) : s
+}
+
 
 /**
  *  @De-formed
@@ -27,13 +37,16 @@ export const readValue = (value: any) => {
  *  input: { target: { value: 'bob' }, name: 'firstName' }
  *  output: { firstName: 'bob' }
  */
-export function eventNameValue(event: any): {
+export const eventNameValue = (event: any): {
   [key: string]: string | number | boolean;
-} {
-  if (event.target) {
-    const { name, checked, type, value } = event.target;
-    if (type === 'checkbox') return { [name]: checked };
-    return { [name]: value };
+} => {
+  if (event?.target) {
+    const {name, checked, type, value} = event.target;
+    if (type === 'checkbox') {
+      return {[name]: checked};
+    } else {
+      return {[name]: value};
+    }
   }
-  return { error: 'unable to parse values' };
+  throw new Error(`"eventNameValue" cannot read object ${event} because it does not have a target property.`)
 }

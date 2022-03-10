@@ -1,6 +1,6 @@
-import { ValidationSchema, ValidationState } from '../types';
-import { Validation } from '../example';
-import { readValue, stringIsNotEmpty } from '../utilities';
+import {ValidationSchema, ValidationState} from '../src/types';
+import {Validation} from '../examples/vanilla';
+import {readValue, stringIsNotEmpty} from '../src/utilities';
 
 type TestSchema = {
   name: string;
@@ -13,11 +13,11 @@ const schema: ValidationSchema<TestSchema> = {
   name: [
     {
       error: 'Name is required.',
-      validation: ({ name }) => stringIsNotEmpty(name),
+      validation: ({name}) => stringIsNotEmpty(name),
     },
     {
       error: 'Cannot be bob.',
-      validation: ({ name }) => name !== 'bob',
+      validation: ({name}) => name !== 'bob',
     },
     {
       error: 'Must be dingo.',
@@ -35,7 +35,7 @@ const schema: ValidationSchema<TestSchema> = {
   agreement: [
     {
       error: 'Must accept terms.',
-      validation: ({ agreement }) => Boolean(agreement),
+      validation: ({agreement}) => Boolean(agreement),
     },
   ],
 };
@@ -85,7 +85,7 @@ describe('useValidation tests', () => {
   });
 
   it('handles a bogus schema', () => {
-    const v = Validation(null as any);
+    const v = Validation(undefined as any);
     expect(v.isValid).toBe(true);
   });
 
@@ -102,7 +102,7 @@ describe('useValidation tests', () => {
     });
     it('retrieves an error message', () => {
       const v = Validation(schema);
-      v.validate('name', { name: '' } as TestSchema);
+      v.validate('name', {name: ''} as TestSchema);
       const output = v.getError('name');
       expect(output).toBe('Name is required.');
     });
@@ -144,7 +144,7 @@ describe('useValidation tests', () => {
     });
     it('retrieves array of all error messages', () => {
       const v = Validation(schema);
-      v.validate('name', { name: '', dingo: true } as TestSchema);
+      v.validate('name', {name: '', dingo: true} as TestSchema);
       const output = v.getAllErrors('name');
       expect(output).toStrictEqual(['Name is required.', 'Must be dingo.']);
     });
@@ -192,7 +192,7 @@ describe('useValidation tests', () => {
           errors: ['Must be dingo.'],
         },
       };
-      const state = { name: 'mary', dingo: true } as TestSchema;
+      const state = {name: 'mary', dingo: true} as TestSchema;
       v.validate('name', state);
       expect(v.isValid).toBe(false);
       expect(v.validationState).toStrictEqual(validationState);
@@ -453,7 +453,7 @@ describe('useValidation tests', () => {
             type: 'checkbox',
           },
         };
-        v.validate('agreement', { ...defaultState, agreement: false });
+        v.validate('agreement', {...defaultState, agreement: false});
         expect(v.getFieldValid('agreement')).toBe(false);
         handleChange(event);
         expect(v.getFieldValid('agreement')).toBe(true);

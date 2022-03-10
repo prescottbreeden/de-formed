@@ -1,4 +1,4 @@
-import { ValidationObject, ValidationSchema, ValidationState } from './types';
+import {ValidationObject, ValidationSchema, ValidationState} from '../src/types';
 import {
   calculateIsValid,
   createGetAllErrors,
@@ -14,7 +14,7 @@ import {
   createValidationState,
   gatherValidationErrors,
 } from '../src';
-import { readValue } from './utilities';
+import {readValue} from '../src/utilities';
 
 // Use whatever kind of statemanagement you like, or use something simple like this
 const useCache = (
