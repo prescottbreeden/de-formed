@@ -1,10 +1,13 @@
-<p align="center" width="50%">
+<p align="center">
   <img src="https://user-images.githubusercontent.com/35798153/157611790-96f35e8b-ee4f-44e4-b3c9-1864900a02f2.png" />
 </p>
+
+[![Known Vulnerabilities](https://snyk.io/test/github/prescottbreeden/de-formed/badge.svg)](https://snyk.io/test/github/prescottbreeden/de-formed)
 
 @De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks. Use these to either create an implementation for a library that doesn't exist yet or to create your own variant that suits your needs.
 
 ## Current Implementations
+Unless you are looking to create your own de-formed variant, you are in the wrong repository. Use one of the links below.
 - [React Hook](https://github.com/prescottbreeden/de-formed-validations-react) 
 - [Node / VanillaJS](https://github.com/prescottbreeden/de-formed-validations-node) 
 
@@ -112,8 +115,6 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
   return validationObject;
 }
 ```
-## Coverage
-![coverage](https://github.com/prescottbreeden/de-formed-validations-react/blob/master/coverage.png?raw=true)
 
 ## License
 
