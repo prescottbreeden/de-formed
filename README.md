@@ -8,7 +8,7 @@
 [![codecov](https://codecov.io/gh/prescottbreeden/de-formed/branch/main/graph/badge.svg?token=a1u71NhJwb)](https://codecov.io/gh/prescottbreeden/de-formed)
 ![size](https://img.shields.io/bundlephobia/minzip/@de-formed/base)
 
-@De-Formed Validations offers a robust and unopinionated API to customize form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks. Use these to either create an implementation for a library that doesn't exist yet or to create your own variant that suits your needs.
+@De-Formed Validations offers a highly customizable API to create form and data validations. The functions in this library are aimed at unifying the implementation of @De-Formed for targeted JavaScript libraries or frameworks. Use these to either create an implementation for a library that doesn't exist yet or to create your own variant that suits your needs.
 
 ## Current Implementations
 Unless you are looking to create your own de-formed variant, you are in the wrong repository. Use one of the links below.
