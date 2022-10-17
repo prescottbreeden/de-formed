@@ -1,10 +1,9 @@
 import {
-  createFakeEvent,
+  eventNameValue,
   generateError,
   readValue,
   stringIsNotEmpty,
 } from '../src/utilities';
-import { eventNameValue } from '../src';
 
 describe('validation helpers', () => {
   describe('stringIsNotEmpty', () => {
@@ -58,7 +57,7 @@ describe('validation helpers', () => {
       };
       expect(willThrowError).toThrow(
         Error(
-          `"eventNameValue" cannot read object ${event} because it does not have a target property.`,
+          `"eventNameValue" cannot read event object because it does not have a target property.`,
         ),
       );
     });
@@ -69,7 +68,7 @@ describe('validation helpers', () => {
       };
       expect(willThrowError).toThrow(
         Error(
-          `"eventNameValue" cannot read object ${event} because it does not have a target property.`,
+          `"eventNameValue" cannot read event object because it does not have a target property.`,
         ),
       );
     });
@@ -84,31 +83,6 @@ describe('validation helpers', () => {
       const error = ({ name }: any) => `${name} is nifty`;
       const result = generateError({ name: 'bob ross' })(error);
       expect(result).toBe('bob ross is nifty');
-    });
-  });
-
-  describe('createFakeEvent', () => {
-    it('returns an event with a target property', () => {
-      const event = createFakeEvent('title', 'bob ross');
-      expect(event.target).toBeDefined();
-
-      const event2 = createFakeEvent('title');
-      expect(event2('bob ross').target).toBeDefined();
-    });
-    it('returns an event with a target property with a name property', () => {
-      const event = createFakeEvent('title', 'bob ross');
-      expect(event.target.name).toBe('title');
-
-      const event2 = createFakeEvent('title');
-      expect(event2('bob ross').target.name).toBe('title');
-    });
-    it('returns an event with a target property with a value property', () => {
-      const event = createFakeEvent('title', 'bob ross');
-      expect(event.target.value).toBe('bob ross');
-
-      const partial = createFakeEvent('title');
-      const event2 = partial('bob ross');
-      expect(event2.target.value).toBe('bob ross');
     });
   });
 });
