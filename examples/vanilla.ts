@@ -1,4 +1,8 @@
-import {ValidationObject, ValidationSchema, ValidationState} from '../src/types';
+import {
+  ValidationObject,
+  ValidationSchema,
+  ValidationState,
+} from '../src/types';
 import {
   calculateIsValid,
   createGetAllErrors,
@@ -7,14 +11,14 @@ import {
   createResetValidationState,
   createValidate,
   createValidateAll,
-  createValidateAllIfTrue,
-  createValidateIfTrue,
+  createValidateAllIfDirty,
+  createValidateIfDirty,
   createValidateOnBlur,
   createValidateOnChange,
   createValidationState,
   gatherValidationErrors,
 } from '../src';
-import {readValue} from '../src/utilities';
+import { readValue } from '../src/utilities';
 
 // Use whatever kind of statemanagement you like, or use something simple like this
 const useCache = (
@@ -51,13 +55,13 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
     setValidationState,
   );
 
-  const validateAllIfTrue = createValidateAllIfTrue(
+  const validateAllIfDirty = createValidateAllIfDirty(
     validationSchema,
     getValidationState,
     setValidationState,
   );
 
-  const validateIfTrue = createValidateIfTrue(
+  const validateIfDirty = createValidateIfDirty(
     validationSchema,
     getValidationState,
     setValidationState,
@@ -88,8 +92,8 @@ export function Validation<S>(validationSchema: ValidationSchema<S>) {
     setValidationState,
     validate,
     validateAll,
-    validateAllIfTrue,
-    validateIfTrue,
+    validateAllIfDirty,
+    validateIfDirty,
     validateOnBlur,
     validateOnChange,
     validationErrors: [],

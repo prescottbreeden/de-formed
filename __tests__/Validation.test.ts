@@ -1,6 +1,6 @@
-import {ValidationSchema, ValidationState} from '../src/types';
-import {Validation} from '../examples/vanilla';
-import {readValue, stringIsNotEmpty} from '../src/utilities';
+import { ValidationSchema, ValidationState } from '../src/types';
+import { Validation } from '../examples/vanilla';
+import { readValue, stringIsNotEmpty } from '../src/utilities';
 
 type TestSchema = {
   name: string;
@@ -13,11 +13,11 @@ const schema: ValidationSchema<TestSchema> = {
   name: [
     {
       error: 'Name is required.',
-      validation: ({name}) => stringIsNotEmpty(name),
+      validation: ({ name }) => stringIsNotEmpty(name),
     },
     {
       error: 'Cannot be bob.',
-      validation: ({name}) => name !== 'bob',
+      validation: ({ name }) => name !== 'bob',
     },
     {
       error: 'Must be dingo.',
@@ -35,21 +35,24 @@ const schema: ValidationSchema<TestSchema> = {
   agreement: [
     {
       error: 'Must accept terms.',
-      validation: ({agreement}) => Boolean(agreement),
+      validation: ({ agreement }) => Boolean(agreement),
     },
   ],
 };
 
 const mockValidationState: ValidationState = {
   name: {
+    dirty: false,
     isValid: true,
     errors: [],
   },
   age: {
+    dirty: false,
     isValid: true,
     errors: [],
   },
   agreement: {
+    dirty: false,
     isValid: true,
     errors: [],
   },
@@ -82,6 +85,7 @@ describe('useValidation tests', () => {
     expect(typeof v.validateAll).toBe('function');
     expect(Array.isArray(v.validationErrors)).toBe(true);
     expect(typeof v.validationState).toBe('object');
+    expect(v.validationState).toStrictEqual(mockValidationState);
   });
 
   it('handles a bogus schema', () => {
@@ -102,7 +106,7 @@ describe('useValidation tests', () => {
     });
     it('retrieves an error message', () => {
       const v = Validation(schema);
-      v.validate('name', {name: ''} as TestSchema);
+      v.validate('name', { name: '' } as TestSchema);
       const output = v.getError('name');
       expect(output).toBe('Name is required.');
     });
@@ -144,7 +148,7 @@ describe('useValidation tests', () => {
     });
     it('retrieves array of all error messages', () => {
       const v = Validation(schema);
-      v.validate('name', {name: '', dingo: true} as TestSchema);
+      v.validate('name', { name: '', dingo: true } as TestSchema);
       const output = v.getAllErrors('name');
       expect(output).toStrictEqual(['Name is required.', 'Must be dingo.']);
     });
@@ -188,11 +192,12 @@ describe('useValidation tests', () => {
       const validationState: ValidationState = {
         ...mockValidationState,
         name: {
-          isValid: false,
+          dirty: true,
           errors: ['Must be dingo.'],
+          isValid: false,
         },
       };
-      const state = {name: 'mary', dingo: true} as TestSchema;
+      const state = { name: 'mary', dingo: true } as TestSchema;
       v.validate('name', state);
       expect(v.isValid).toBe(false);
       expect(v.validationState).toStrictEqual(validationState);
@@ -226,33 +231,36 @@ describe('useValidation tests', () => {
     });
   });
 
-  describe('validateAllIfTrue', () => {
+  describe('validateAllIfDirty', () => {
     it('returns a boolean', () => {
       const v = Validation(schema);
-      const output = v.validateAllIfTrue(defaultState);
+      v.validateAll(failingState)
+      const output = v.validateAllIfDirty(defaultState);
       expect(typeof output).toBe('boolean');
     });
     it('returns true if validations pass', () => {
       const v = Validation(schema);
-      const output = v.validateAllIfTrue(defaultState);
+      v.validateAll(failingState)
+      const output = v.validateAllIfDirty(defaultState);
       expect(output).toBe(true);
     });
     it('ignores failing validations', () => {
       const v = Validation(schema);
-      const output = v.validateAllIfTrue(failingState);
+      const output = v.validateAllIfDirty(failingState);
       expect(output).toBe(true);
     });
     it('handles nested validation reductions', () => {
       const data = [defaultState, defaultState, defaultState];
       const v = Validation(schema);
-      const output = data.map((s) => v.validateAllIfTrue(s));
+      v.validateAll(failingState)
+      const output = data.map((s) => v.validateAllIfDirty(s));
       expect(output).toStrictEqual([true, true, true]);
     });
     it('validates a subsection of keys', () => {
       const v = Validation(schema);
-      v.validateAllIfTrue(failingState);
+      v.validateAllIfDirty(failingState);
       expect(v.getError('age')).toBe('');
-      v.validateAllIfTrue(failingState, ['name']);
+      v.validateAllIfDirty(failingState, ['name']);
       expect(v.getError('age')).toBe('');
     });
     it('handles missing properties', () => {
@@ -266,25 +274,25 @@ describe('useValidation tests', () => {
         ],
       };
       const v = Validation(wonkySchema);
-      v.validateAllIfTrue(failingState);
+      v.validateAllIfDirty(failingState);
       expect(v.getError('canSave' as keyof TestSchema)).toBe('');
     });
     it('returns true if given bogus property names', () => {
       const v = Validation(schema);
       let output: boolean;
-      output = v.validateAllIfTrue(failingState, ['dingo', 'jack'] as any);
+      output = v.validateAllIfDirty(failingState, ['dingo', 'jack'] as any);
       expect(output).toBe(true);
     });
   });
 
-  describe('validateIfTrue', () => {
+  describe('validateIfDirty', () => {
     it('returns a boolean if key exists', () => {
       const v = Validation(schema);
       const state = {
         ...defaultState,
         name: 'bob',
       };
-      const output = v.validateIfTrue('name', state);
+      const output = v.validateIfDirty('name', state);
       expect(typeof output).toBe('boolean');
     });
     it('returns true if key does not exist', () => {
@@ -294,23 +302,20 @@ describe('useValidation tests', () => {
         ...defaultState,
         name: 'bob',
       };
-      const output = v.validateIfTrue(name, state);
+      const output = v.validateIfDirty(name, state);
       expect(output).toBe(true);
     });
     it('updates the validationState when validation fails', () => {
       const v = Validation(schema);
-      const validationState = {
-        ...mockValidationState,
-      };
       const name = 'name';
       const state = {
         ...defaultState,
         name: 'chuck',
         dingo: true,
       };
-      v.validateIfTrue(name, state);
+      v.validateIfDirty(name, state);
       expect(v.isValid).toBe(true);
-      expect(v.validationState).toStrictEqual(validationState);
+      expect(v.validationState).toStrictEqual(mockValidationState);
     });
     it('updates the validationState when an invalid validation succeeds', () => {
       const v = Validation(schema);
@@ -322,14 +327,18 @@ describe('useValidation tests', () => {
         ...defaultState,
         name: 'jack',
       };
-      const validationState = {
-        ...mockValidationState,
-      };
       v.validate('name', state);
       expect(v.isValid).toBe(false);
-      v.validateIfTrue('name', state2);
+      v.validateIfDirty('name', state2);
       expect(v.isValid).toBe(true);
-      expect(v.validationState).toStrictEqual(validationState);
+      expect(v.validationState).toStrictEqual({
+        ...mockValidationState,
+        name: {
+          dirty: true,
+          errors: [],
+          isValid: true
+        }
+      });
     });
   });
 
@@ -401,7 +410,7 @@ describe('useValidation tests', () => {
   });
 
   describe('createValidateOnChange', () => {
-    describe('creates a function that calls validateIfTrue when given an event', () => {
+    describe('creates a function that calls validateIfDirty when given an event', () => {
       // useCache :: none -> [f, g]
       function useCache<S>(initial: S) {
         let value = initial;
@@ -453,7 +462,7 @@ describe('useValidation tests', () => {
             type: 'checkbox',
           },
         };
-        v.validate('agreement', {...defaultState, agreement: false});
+        v.validate('agreement', { ...defaultState, agreement: false });
         expect(v.getFieldValid('agreement')).toBe(false);
         handleChange(event);
         expect(v.getFieldValid('agreement')).toBe(true);

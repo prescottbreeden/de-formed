@@ -1,12 +1,12 @@
-// --[ Validation Object Types ]------------------------------------------------
+// // --[ Validation Object Types ]------------------------------------------------
 export type GetAllErrors<S> = (property: keyof S) => string[]
 export type GetError<S> = (property: keyof S) => string
 export type GetFieldValid<S> = (property: keyof S) => boolean
 export type ResetValidationState = () => void
 export type Validate<S> = (property: keyof S, value: S) => boolean
 export type ValidateAll<S> = (value: S, keys?: Array<keyof S>) => boolean
-export type ValidateAllIfTrue<S> = (value: S, keys?: Array<keyof S>) => boolean
-export type ValidateIfTrue<S> = (property: keyof S, value: S) => boolean
+export type ValidateAllIfDirty<S> = (value: S, keys?: Array<keyof S>) => boolean
+export type ValidateIfDirty<S> = (property: keyof S, value: S) => boolean
 export type ValidateOnBlur<S> = (value: S) => (event: any) => any
 export type ValidateOnChange<S> = (
   onChange: (event: any) => any,
@@ -25,8 +25,8 @@ export interface ValidationObject<S> {
   setValidationState: SetValidationState
   validate: Validate<S>
   validateAll: ValidateAll<S>
-  validateAllIfTrue: ValidateAllIfTrue<S>
-  validateIfTrue: ValidateIfTrue<S>
+  validateAllIfDirty: ValidateAllIfDirty<S>
+  validateIfDirty: ValidateIfDirty<S>
   validateOnBlur: ValidateOnBlur<S>
   validateOnChange: ValidateOnChange<S>
   validationErrors: string[]
@@ -45,13 +45,12 @@ export interface ValidationSchema<S> {
 }
 
 export interface ValidationStateProperty {
-  isValid: boolean
+  dirty: boolean
   errors: string[]
+  isValid: boolean
 }
 
 export type ValidationState = {
   [key: string]: ValidationStateProperty
 }
 
-// TODO: probably just scrap this, doesn't feel valuable to expose
-export type EventName = {[key: string]: string | number | boolean}
