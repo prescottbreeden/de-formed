@@ -229,6 +229,45 @@ describe('useValidation tests', () => {
       output = v.validateAll(failingState, ['dingo', 'jack'] as any);
       expect(output).toBe(true);
     });
+    it('updates the validation state', () => {
+      const v = Validation(schema);
+      v.validateAll(failingState);
+      expect(v.validationState).toStrictEqual({
+        age: {
+          dirty: true,
+          errors: ["Must be 18."],
+          isValid: false
+        },
+        agreement: {
+          dirty: true,
+          errors: [],
+          isValid: true
+        },
+        name: {
+          dirty: true,
+          errors: ["Cannot be bob."],
+          isValid: false
+        },
+      });
+      v.validateIfDirty('name', { ...failingState, name: 'dingo' });
+      expect(v.validationState).toStrictEqual({
+        age: {
+          dirty: true,
+          errors: ["Must be 18."],
+          isValid: false
+        },
+        agreement: {
+          dirty: true,
+          errors: [],
+          isValid: true
+        },
+        name: {
+          dirty: true,
+          errors: [],
+          isValid: true
+        },
+      });
+    })
   });
 
   describe('validateAllIfDirty', () => {

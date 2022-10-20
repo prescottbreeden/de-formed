@@ -27,7 +27,15 @@ yarn add @de-formed/base
 npm i @de-formed/base
 ```
 
-## Basic Usage
+## Usage
+
+### Factories all the way down
+
+De-Formed is built with factories that generate the behavior of the package by
+providing the factories with your state's getter and setter. You can use the
+default implementation provided by the factories or you can create your own
+that match the signature of the already defined objects, or you can extend it
+with new functionality that doesn't exist by default.
 
 ### Decide how you want to provide state and reusability
 

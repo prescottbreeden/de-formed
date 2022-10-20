@@ -201,15 +201,18 @@ export const createValidateAll =
     props = Object.keys(validationSchema) as Array<keyof S>,
   ): boolean => {
     const vState = readValue(validationState);
-    const updatedState = props.reduce<ValidationState>((acc, property) => {
-      acc[property as keyof ValidationState] = updateProperty<S>({
-        validationSchema,
-        property,
-        state,
-        dirty: true,
-      });
-      return acc;
-    }, vState);
+    const updatedState = props.reduce<ValidationState>(
+      (acc, property) => ({
+        ...acc,
+        [property as keyof ValidationState]: updateProperty<S>({
+          validationSchema,
+          property,
+          state,
+          dirty: true,
+        }),
+      }),
+      vState,
+    );
     setValidationState(updatedState);
     return calculateIsValid(updatedState);
   };
@@ -232,15 +235,17 @@ export const createValidateAllIfDirty =
     const vState = readValue(validationState);
     const updatedState = props.reduce<ValidationState>((acc, property) => {
       const isDirty = acc[property as keyof ValidationState]?.dirty ?? false;
-      if (isDirty) {
-        acc[property as keyof ValidationState] = updateProperty<S>({
-          validationSchema,
-          property,
-          state,
-          dirty: isDirty,
-        });
-      }
-      return acc;
+      return isDirty
+        ? {
+            ...acc,
+            [property as keyof ValidationState]: updateProperty<S>({
+              validationSchema,
+              property,
+              state,
+              dirty: isDirty,
+            }),
+          }
+        : acc;
     }, vState);
     setValidationState(updatedState);
     return calculateIsValid(updatedState);
