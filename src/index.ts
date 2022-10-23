@@ -11,7 +11,7 @@ import type {
   ValidateIfDirty,
   ValidateOnBlur,
   ValidateOnChange,
-  ValidationProps,
+  Validation,
   ValidationSchema,
   ValidationState,
   ValidationStateProperty,
@@ -115,8 +115,8 @@ export const updateProperty = <S>({
   if (config?.yup) {
     let errors: string[] = [];
     let isValid = true;
-    const { fields } = validationSchema
-    const exists = Object.keys(fields).includes(property as string)
+    const { fields } = validationSchema;
+    const exists = Object.keys(fields).includes(property as string);
     try {
       if (exists) {
         validationSchema.validateSyncAt(property, state, {
@@ -136,11 +136,18 @@ export const updateProperty = <S>({
       validationSchema[property as keyof ValidationSchema<S>] ?? [];
 
     const errors = validationRules
-      .map((validationRule: ValidationProps<S>) =>
-        validationRule.validation(state)
-          ? ''
-          : generateError(state)(validationRule.error),
-      )
+      .map((validationRule: Validation<S>) => {
+        if ('auto' in validationRule) {
+          // check if Validation is an AutoProp
+          return validationRule.prop(property).validation(state)
+            ? ''
+            : generateError(state)(validationRule.prop(property).error);
+        } else {
+          return validationRule.validation(state)
+            ? ''
+            : generateError(state)(validationRule.error);
+        }
+      })
       .filter(stringIsNotEmpty);
 
     return { dirty, errors, isValid: Boolean(!errors.length) };

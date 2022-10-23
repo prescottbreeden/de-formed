@@ -24,7 +24,44 @@ yet or to create your own variant that suits your needs.
 1. **Unopinionated** - customize your UX to the Moon 🚀
 1. **Lightweight** - [compare it on bundlephobia](https://bundlephobia.com/package/@de-formed/react-validations)
 1. **Easy to Use** - its all functions
-1. **Easy to Test** - unit test your validation rules, integration test their implementation
+1. **Easy to Test** - unit test your validation rules
+
+## Example Schemas
+Auto-props are functions that apply simple validation rules for strings
+and numbers:
+```ts
+const PersonValidation = Validation<Person>({
+  name: [required(), shorterThan(12)],
+  age: [min(42), max(100)],
+  agreement: [is(true, 'Must accept terms.')],
+})
+```
+Available Auto-props are:
+- required
+- matches
+- shorterThan
+- longerThan
+- min
+- max
+- is
+
+Auto-props are great for handling very simple rules, however more complex
+validations should use the explicit schema format:
+```ts
+const PersonValidation = Validation<Person>({
+  name: [
+    required(),
+    {
+      error: 'Cannot be bob.',
+      validation: ({ name }) => name !== 'bob',
+    },
+    {
+      error: 'Must be dingo.',
+      validation: ({ dingo, name }) => dingo ? name === 'dingo' : true,
+    },
+  ],
+})
+```
 
 ## Yup Compatible
 
