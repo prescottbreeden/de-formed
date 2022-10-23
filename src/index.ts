@@ -3,6 +3,7 @@ import type {
   GetError,
   GetFieldValid,
   ResetValidationState,
+  SchemaConfig,
   SetValidationState,
   Validate,
   ValidateAll,
@@ -10,6 +11,7 @@ import type {
   ValidateIfDirty,
   ValidateOnBlur,
   ValidateOnChange,
+  ValidationProps,
   ValidationSchema,
   ValidationState,
   ValidationStateProperty,
@@ -63,51 +65,86 @@ export const gatherValidationErrors = <S>(
 };
 
 /**
- * Creates the validation state based on the defined schema
+ * Creates the validation state based on the keys of the defined schema
  */
-export const createValidationState = <S>(
-  validationSchema: ValidationSchema<S> = {},
-): ValidationState =>
-  Object.keys(validationSchema).reduce<ValidationState>((acc, key) => {
-    acc[key] = {
-      dirty: false,
-      errors: [],
-      isValid: true,
-    };
-    return acc;
-  }, {});
+export const createValidationState = <S>({
+  validationSchema,
+  config,
+}: {
+  validationSchema: ValidationSchema<S>;
+  config?: SchemaConfig;
+}): ValidationState =>
+  config?.yup
+    ? Object.keys(validationSchema.fields).reduce<ValidationState>(
+        (acc, key) => {
+          acc[key] = {
+            dirty: false,
+            errors: [],
+            isValid: true,
+          };
+          return acc;
+        },
+        {},
+      )
+    : Object.keys(validationSchema).reduce<ValidationState>((acc, key) => {
+        acc[key] = {
+          dirty: false,
+          errors: [],
+          isValid: true,
+        };
+        return acc;
+      }, {});
 
 /**
  * Helper function to create updated properties to merge with the ValidationState.
  * If the property doesn't exist it defaults to truthy state.
  */
 export const updateProperty = <S>({
-  validationSchema,
+  config,
+  dirty,
   property,
   state,
-  dirty,
+  validationSchema,
 }: {
-  validationSchema: ValidationSchema<S>;
+  config?: SchemaConfig;
+  dirty: boolean;
   property: keyof S;
   state: S;
-  dirty: boolean;
+  validationSchema: ValidationSchema<S>;
 }): ValidationStateProperty => {
-  const validationRules =
-    validationSchema[property as keyof ValidationSchema<S>] ?? [];
+  if (config?.yup) {
+    let errors: string[] = [];
+    let isValid = true;
+    const { fields } = validationSchema
+    const exists = Object.keys(fields).includes(property as string)
+    try {
+      if (exists) {
+        validationSchema.validateSyncAt(property, state, {
+          abortEarly: false,
+        });
+      }
+    } catch (error: any) {
+      errors = error.inner.reduce(
+        (acc: any, curr: any) => [...acc, curr.message],
+        [],
+      );
+      isValid = false;
+    }
+    return { dirty, errors, isValid };
+  } else {
+    const validationRules =
+      validationSchema[property as keyof ValidationSchema<S>] ?? [];
 
-  const errors = validationRules
-    .map((validationRule) =>
-      validationRule.validation(state)
-        ? ''
-        : generateError(state)(validationRule.error),
-    )
-    .filter(stringIsNotEmpty);
+    const errors = validationRules
+      .map((validationRule: ValidationProps<S>) =>
+        validationRule.validation(state)
+          ? ''
+          : generateError(state)(validationRule.error),
+      )
+      .filter(stringIsNotEmpty);
 
-  return {
-    dirty,
-    errors,
-    isValid: Boolean(!errors.length),
-  };
+    return { dirty, errors, isValid: Boolean(!errors.length) };
+  }
 };
 
 /**
@@ -115,21 +152,28 @@ export const updateProperty = <S>({
  * updates the validationState and returns a boolean
  */
 export const createValidate =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    validationState: ValidationState | (() => ValidationState),
-    setValidationState: SetValidationState,
-  ): Validate<S> =>
+  <S>({
+    config,
+    setValidationState,
+    validationSchema,
+    validationState,
+  }: {
+    config?: SchemaConfig;
+    setValidationState: SetValidationState;
+    validationSchema: ValidationSchema<S>;
+    validationState: ValidationState | (() => ValidationState);
+  }): Validate<S> =>
   (property: keyof S, state: S) => {
     const vState = readValue(validationState);
     if (vState[property]) {
       const newValidationState = {
         ...vState,
         [property]: updateProperty({
-          validationSchema,
+          config,
+          dirty: true,
           property,
           state,
-          dirty: true,
+          validationSchema,
         }),
       };
       setValidationState(newValidationState);
@@ -144,12 +188,17 @@ export const createValidate =
  * truthy state.
  */
 export const createResetValidationState =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    setValidationState: SetValidationState,
-  ): ResetValidationState =>
+  <S>({
+    config,
+    setValidationState,
+    validationSchema,
+  }: {
+    config?: SchemaConfig;
+    setValidationState: SetValidationState;
+    validationSchema: ValidationSchema<S>;
+  }): ResetValidationState =>
   (): void =>
-    setValidationState(createValidationState(validationSchema));
+    setValidationState(createValidationState<S>({ config, validationSchema }));
 
 /**
  * Creates a validateIfDirty function that is exposed on the ValidationObject
@@ -157,21 +206,28 @@ export const createResetValidationState =
  * boolean.
  */
 export const createValidateIfDirty =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    validationState: ValidationState | (() => ValidationState),
-    setValidationState: SetValidationState,
-  ): ValidateIfDirty<S> =>
+  <S>({
+    config,
+    setValidationState,
+    validationSchema,
+    validationState,
+  }: {
+    config?: SchemaConfig;
+    setValidationState: SetValidationState;
+    validationSchema: ValidationSchema<S>;
+    validationState: ValidationState | (() => ValidationState);
+  }): ValidateIfDirty<S> =>
   (property: keyof S, state: S): boolean => {
     const vState = readValue(validationState);
     if (vState[property]) {
       const updatedState: ValidationState = {
         ...vState,
         [property]: updateProperty<S>({
-          validationSchema,
+          config,
+          dirty: vState[property].dirty,
           property,
           state,
-          dirty: vState[property].dirty,
+          validationSchema,
         }),
       };
       const valid = isPropertyValid(property)(updatedState);
@@ -191,24 +247,33 @@ export const createValidateIfDirty =
  * optional second parameter for validating a subset of properties.
  */
 export const createValidateAll =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    validationState: ValidationState | (() => ValidationState),
-    setValidationState: SetValidationState,
-  ): ValidateAll<S> =>
+  <S>({
+    config,
+    setValidationState,
+    validationSchema,
+    validationState,
+  }: {
+    config?: SchemaConfig;
+    setValidationState: SetValidationState;
+    validationSchema: ValidationSchema<S>;
+    validationState: ValidationState | (() => ValidationState);
+  }): ValidateAll<S> =>
   (
     state: S,
-    props = Object.keys(validationSchema) as Array<keyof S>,
+    props = Object.keys(
+      config?.yup ? validationSchema.fields : validationSchema,
+    ) as Array<keyof S>,
   ): boolean => {
     const vState = readValue(validationState);
     const updatedState = props.reduce<ValidationState>(
       (acc, property) => ({
         ...acc,
         [property as keyof ValidationState]: updateProperty<S>({
-          validationSchema,
+          config,
+          dirty: true,
           property,
           state,
-          dirty: true,
+          validationSchema,
         }),
       }),
       vState,
@@ -223,14 +288,22 @@ export const createValidateAll =
  * validationState the validation passes and returns a boolean
  */
 export const createValidateAllIfDirty =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    validationState: ValidationState | (() => ValidationState),
-    setValidationState: SetValidationState,
-  ): ValidateAllIfDirty<S> =>
+  <S>({
+    config,
+    setValidationState,
+    validationSchema,
+    validationState,
+  }: {
+    config?: SchemaConfig;
+    setValidationState: SetValidationState;
+    validationSchema: ValidationSchema<S>;
+    validationState: ValidationState | (() => ValidationState);
+  }): ValidateAllIfDirty<S> =>
   (
     state: S,
-    props = Object.keys(validationSchema) as Array<keyof S>,
+    props = Object.keys(
+      config?.yup ? validationSchema.fields : validationSchema,
+    ) as Array<keyof S>,
   ): boolean => {
     const vState = readValue(validationState);
     const updatedState = props.reduce<ValidationState>((acc, property) => {
@@ -239,10 +312,11 @@ export const createValidateAllIfDirty =
         ? {
             ...acc,
             [property as keyof ValidationState]: updateProperty<S>({
-              validationSchema,
+              config,
+              dirty: isDirty,
               property,
               state,
-              dirty: isDirty,
+              validationSchema,
             }),
           }
         : acc;
@@ -293,22 +367,29 @@ export const createGetFieldValid =
  * name of the event whenever a blur event happens.
  */
 export const createValidateOnBlur =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    validationState: ValidationState | (() => ValidationState),
-    setValidationState: SetValidationState,
-  ): ValidateOnBlur<S> =>
+  <S>({
+    config,
+    validationSchema,
+    validationState,
+    setValidationState,
+  }: {
+    config?: SchemaConfig;
+    validationSchema: ValidationSchema<S>;
+    validationState: ValidationState | (() => ValidationState);
+    setValidationState: SetValidationState;
+  }): ValidateOnBlur<S> =>
   (state: S) =>
   (event: any): void => {
     const incomingFormState = {
       ...state,
       ...eventNameValue(event),
     };
-    const validate = createValidate(
+    const validate: Validate<S> = createValidate({
+      config,
       validationSchema,
-      validationState,
+      validationState: readValue(validationState),
       setValidationState,
-    );
+    });
     validate(event.target.name, incomingFormState);
   };
 
@@ -317,22 +398,29 @@ export const createValidateOnBlur =
  * matching the name of the event whenever a change event happens.
  */
 export const createValidateOnChange =
-  <S>(
-    validationSchema: ValidationSchema<S>,
-    validationState: ValidationState | (() => ValidationState),
-    setValidationState: SetValidationState,
-  ): ValidateOnChange<S> =>
+  <S>({
+    config,
+    validationSchema,
+    validationState,
+    setValidationState,
+  }: {
+    config?: SchemaConfig;
+    validationSchema: ValidationSchema<S>;
+    validationState: ValidationState | (() => ValidationState);
+    setValidationState: SetValidationState;
+  }): ValidateOnChange<S> =>
   (onChange: (event: any) => any, state: S) =>
   (event: any): any => {
     const incomingFormState = {
       ...state,
       ...eventNameValue(event),
     };
-    const validateIfDirty = createValidateIfDirty(
+    const validateIfDirty: ValidateIfDirty<S> = createValidateIfDirty({
+      config,
       validationSchema,
-      readValue(validationState),
+      validationState: readValue(validationState),
       setValidationState,
-    );
+    });
     validateIfDirty(event.target.name, incomingFormState);
     return onChange(event);
   };

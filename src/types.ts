@@ -40,9 +40,12 @@ export interface ValidationProps<S> {
   validation: ValidationFunction<S>
 }
 
-export interface ValidationSchema<S> {
-  [key: string]: Array<ValidationProps<S>>
-}
+export type ValidationSchema<S> =
+  | { [key: string]: Array<ValidationProps<S>> }
+  | {
+      [key: string]: any;
+      fields: { [key: string]: any };
+    }; // yup object
 
 export interface ValidationStateProperty {
   dirty: boolean
@@ -54,3 +57,6 @@ export type ValidationState = {
   [key: string]: ValidationStateProperty
 }
 
+export type SchemaConfig = {
+  yup?: boolean
+}

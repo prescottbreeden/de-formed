@@ -1,6 +1,6 @@
-import { ValidationSchema, ValidationState } from '../src/types';
+import { ValidationObject, ValidationState } from '../src/types';
 import { Validation } from '../examples/vanilla';
-import { readValue, stringIsNotEmpty } from '../src/utilities';
+import * as Yup from 'yup'
 
 type TestSchema = {
   name: string;
@@ -9,36 +9,27 @@ type TestSchema = {
   agreement: boolean;
 };
 
-const schema: ValidationSchema<TestSchema> = {
-  name: [
-    {
-      error: 'Name is required.',
-      validation: ({ name }) => stringIsNotEmpty(name),
-    },
-    {
-      error: 'Cannot be bob.',
-      validation: ({ name }) => name !== 'bob',
-    },
-    {
-      error: 'Must be dingo.',
-      validation: (state: TestSchema) => {
-        return state.dingo ? state.name === 'dingo' : true;
-      },
-    },
-  ],
-  age: [
-    {
-      error: 'Must be 18.',
-      validation: (state: TestSchema) => state.age >= 18,
-    },
-  ],
-  agreement: [
-    {
-      error: 'Must accept terms.',
-      validation: ({ agreement }) => agreement,
-    },
-  ],
-};
+const schema = Yup.object({
+  name: Yup.string()
+    .required('Name is required.')
+    .test({
+      message: 'Cannot be bob.',
+      test: (value: string | undefined) => value !== 'bob',
+    })
+    .when('dingo', {
+      is: true,
+      then: Yup.string().test({
+        message: 'Must be dingo.',
+        test: (value: string | undefined) => value === 'dingo',
+      }),
+    }),
+  age: Yup.number().test({
+    message: 'Must be 18.',
+    test: (value: number | undefined) => (value ? value >= 18 : false),
+  }),
+  agreement: Yup.boolean().isTrue('Must accept terms'),
+});
+
 
 const mockValidationState: ValidationState = {
   name: {
@@ -71,13 +62,17 @@ const failingState = {
   age: 15,
 };
 
-describe('useValidation tests', () => {
+describe('validation tests', () => {
+  let v: ValidationObject<TestSchema>
+  beforeEach(() => {
+     v = Validation(schema, { yup: true });
+  })
   it('should be defined', () => {
     expect(Validation).toBeDefined();
   });
 
   it('builds the object correctly and checks types', () => {
-    const v = Validation(schema);
+    const v = Validation(schema, { yup: true });
     expect(typeof v.getError).toBe('function');
     expect(typeof v.getAllErrors).toBe('function');
     expect(typeof v.isValid).toBe('boolean');
@@ -90,17 +85,14 @@ describe('useValidation tests', () => {
 
   describe('getError', () => {
     it('returns empty string by default', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.getError('name');
       expect(output).toBe('');
     });
     it('returns empty string if the property does not exist', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.getError('balls' as keyof TestSchema);
       expect(output).toBe('');
     });
     it('retrieves an error message', () => {
-      const v = Validation<TestSchema>(schema);
       v.validate('name', { name: '' } as TestSchema);
       const output = v.getError('name');
       expect(output).toBe('Name is required.');
@@ -109,17 +101,14 @@ describe('useValidation tests', () => {
 
   describe('getFieldValid', () => {
     it('returns true by default', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.getFieldValid('name');
       expect(output).toBe(true);
     });
     it('returns true if the property does not exist', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.getFieldValid('balls' as keyof TestSchema);
       expect(output).toBe(true);
     });
     it('retrieves an invalid state', () => {
-      const v = Validation<TestSchema>(schema);
       const state = {
         ...defaultState,
         name: '',
@@ -132,17 +121,14 @@ describe('useValidation tests', () => {
 
   describe('getAllErrors', () => {
     it('returns empty array by default', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.getAllErrors('name');
       expect(output).toStrictEqual([]);
     });
     it('returns empty array if the property does not exist', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.getAllErrors('balls' as keyof TestSchema);
       expect(output).toStrictEqual([]);
     });
     it('retrieves array of all error messages', () => {
-      const v = Validation<TestSchema>(schema);
       v.validate('name', { name: '', dingo: true } as TestSchema);
       const output = v.getAllErrors('name');
       expect(output).toStrictEqual(['Name is required.', 'Must be dingo.']);
@@ -151,17 +137,14 @@ describe('useValidation tests', () => {
 
   describe('isValid', () => {
     it('returns true by default', () => {
-      const v = Validation<TestSchema>(schema);
       expect(v.isValid).toBe(true);
     });
     it('changes to false after a validation fails', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.validate('name', failingState);
       expect(v.isValid).toBe(output);
       expect(v.isValid).toBe(false);
     });
     it('changes to true after a failed validation passes', () => {
-      const v = Validation<TestSchema>(schema);
       v.validate('name', failingState);
       v.validate('name', defaultState);
       const output = v.isValid;
@@ -171,19 +154,16 @@ describe('useValidation tests', () => {
 
   describe('validate', () => {
     it('returns a boolean if key exists', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.validate('name', defaultState);
       expect(typeof output).toBe('boolean');
     });
     it('returns true if key does not exist', () => {
       let output: boolean;
-      const v = Validation<TestSchema>(schema);
       const name = 'balls' as keyof TestSchema;
       output = v.validate(name, defaultState);
       expect(output).toBe(true);
     });
     it('updates the validationState when validation fails', () => {
-      const v = Validation<TestSchema>(schema);
       const validationState: ValidationState = {
         ...mockValidationState,
         name: {
@@ -201,31 +181,26 @@ describe('useValidation tests', () => {
 
   describe('validateAll', () => {
     it('returns a boolean', () => {
-      const v = Validation<TestSchema>(schema);
       let output: boolean;
       output = v.validateAll(defaultState);
       expect(typeof output).toBe('boolean');
     });
     it('returns true if validations pass', () => {
-      const v = Validation<TestSchema>(schema);
       let output: boolean;
       output = v.validateAll(defaultState);
       expect(output).toBe(true);
     });
     it('returns false if any validation fails', () => {
-      const v = Validation<TestSchema>(schema);
       let output: boolean;
       output = v.validateAll(failingState);
       expect(output).toBe(false);
     });
     it('returns true if given bogus property names', () => {
-      const v = Validation<TestSchema>(schema);
       let output: boolean;
       output = v.validateAll(failingState, ['dingo', 'jack'] as any);
       expect(output).toBe(true);
     });
     it('updates the validation state', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState);
       expect(v.validationState).toStrictEqual({
         age: {
@@ -267,31 +242,26 @@ describe('useValidation tests', () => {
 
   describe('validateAllIfDirty', () => {
     it('returns a boolean', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState)
       const output = v.validateAllIfDirty(defaultState);
       expect(typeof output).toBe('boolean');
     });
     it('returns true if validations pass', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState)
       const output = v.validateAllIfDirty(defaultState);
       expect(output).toBe(true);
     });
     it('ignores failing validations', () => {
-      const v = Validation<TestSchema>(schema);
       const output = v.validateAllIfDirty(failingState);
       expect(output).toBe(true);
     });
     it('handles nested validation reductions', () => {
       const data = [defaultState, defaultState, defaultState];
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState)
       const output = data.map((s) => v.validateAllIfDirty(s));
       expect(output).toStrictEqual([true, true, true]);
     });
     it('validates a subsection of keys', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAllIfDirty(failingState);
       expect(v.getError('age')).toBe('');
       v.validateAllIfDirty(failingState, ['name']);
@@ -312,7 +282,6 @@ describe('useValidation tests', () => {
       expect(v.getError('canSave' as keyof TestSchema)).toBe('');
     });
     it('returns true if given bogus property names', () => {
-      const v = Validation(schema);
       let output: boolean;
       output = v.validateAllIfDirty(failingState, ['dingo', 'jack'] as any);
       expect(output).toBe(true);
@@ -321,7 +290,6 @@ describe('useValidation tests', () => {
 
   describe('validateIfDirty', () => {
     it('returns a boolean if key exists', () => {
-      const v = Validation<TestSchema>(schema);
       const state = {
         ...defaultState,
         name: 'bob',
@@ -330,7 +298,6 @@ describe('useValidation tests', () => {
       expect(typeof output).toBe('boolean');
     });
     it('returns true if key does not exist', () => {
-      const v = Validation<TestSchema>(schema);
       const name = 'balls' as keyof TestSchema;
       const state = {
         ...defaultState,
@@ -340,7 +307,6 @@ describe('useValidation tests', () => {
       expect(output).toBe(true);
     });
     it('updates the validationState when validation fails', () => {
-      const v = Validation<TestSchema>(schema);
       const name = 'name';
       const state = {
         ...defaultState,
@@ -352,7 +318,6 @@ describe('useValidation tests', () => {
       expect(v.validationState).toStrictEqual(mockValidationState);
     });
     it('updates the validationState when an invalid validation succeeds', () => {
-      const v = Validation<TestSchema>(schema);
       const state = {
         ...defaultState,
         name: 'bob',
@@ -378,11 +343,9 @@ describe('useValidation tests', () => {
 
   describe('validationErrors', () => {
     it('returns an empty array', () => {
-      const v = Validation<TestSchema>(schema);
       expect(v.validationErrors).toStrictEqual([]);
     });
     it('returns an array of all errors', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState);
       expect(v.validationErrors).toStrictEqual([
         'Cannot be bob.',
@@ -393,7 +356,6 @@ describe('useValidation tests', () => {
 
   describe('resetValidationState', () => {
     it('resets the validation state', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState);
       v.resetValidationState();
       expect(v.isValid).toBe(true);
@@ -402,7 +364,6 @@ describe('useValidation tests', () => {
 
   describe('validationErrors', () => {
     it('adds validation errors when validation state is invalid', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState);
       expect(v.validationErrors).toStrictEqual([
         'Cannot be bob.',
@@ -410,7 +371,6 @@ describe('useValidation tests', () => {
       ]);
     });
     it('removes validation errors when validation state is valid', () => {
-      const v = Validation<TestSchema>(schema);
       v.validateAll(failingState);
       v.validateAll(defaultState);
       expect(v.validationErrors).toStrictEqual([]);
@@ -419,8 +379,8 @@ describe('useValidation tests', () => {
 
   describe('setValidationState', () => {
     it('overrides the existing validation state with a new one', () => {
-      const v1 = Validation<TestSchema>(schema);
-      const v2 = Validation<TestSchema>(schema);
+      const v1 = Validation<TestSchema>(schema, { yup: true });
+      const v2 = Validation<TestSchema>(schema, { yup: true });
       v1.validateAll(failingState);
       v2.setValidationState(v1.validationState);
       expect(v1.validationState).toStrictEqual(v2.validationState);
@@ -429,7 +389,6 @@ describe('useValidation tests', () => {
 
   describe('createValidateOnBlur', () => {
     it('creates a function that calls validate when given an event', () => {
-      const v = Validation<TestSchema>(schema);
       const handleBlur = v.validateOnBlur(defaultState);
       const event = {
         target: {
@@ -445,18 +404,7 @@ describe('useValidation tests', () => {
 
   describe('createValidateOnChange', () => {
     describe('creates a function that calls validateIfDirty when given an event', () => {
-      // useCache :: none -> [f, g]
-      function useCache<S>(initial: S) {
-        let value = initial;
-        const setValue = (data: S) => {
-          value = data;
-          return data;
-        };
-        const retrieveValue = () => value;
-        return [retrieveValue, setValue];
-      }
       it('does not update falsey events', () => {
-        const v = Validation<TestSchema>(schema);
         const onChange = (x: any) => x;
         const handleChange = v.validateOnChange(onChange, defaultState);
         const event = {
@@ -469,10 +417,8 @@ describe('useValidation tests', () => {
         expect(v.isValid).toBe(true);
       });
       it('updates truthy events', () => {
-        const [getState] = useCache(failingState);
-        const v = Validation<TestSchema>(schema);
         const onChange = (x: any) => x;
-        const handleChange = v.validateOnChange(onChange, readValue(getState));
+        const handleChange = v.validateOnChange(onChange, failingState);
         const event = {
           target: {
             name: 'name',
@@ -485,10 +431,8 @@ describe('useValidation tests', () => {
         expect(v.getFieldValid('name')).toBe(true);
       });
       it('updates checked values', () => {
-        const [getState] = useCache(failingState);
-        const v = Validation<TestSchema>(schema);
         const onChange = (x: any) => x;
-        const handleChange = v.validateOnChange(onChange, readValue(getState));
+        const handleChange = v.validateOnChange(onChange, failingState);
         const event = {
           target: {
             name: 'agreement',

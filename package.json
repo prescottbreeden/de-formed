@@ -1,6 +1,6 @@
 {
   "name": "@de-formed/base",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Base Validation Class to generate validations for various implementations of @De-Formed.",
   "main": "dist/index",
   "repository": "https://github.com/prescottbreeden/de-formed",
@@ -28,7 +28,8 @@
     "ts-jest": "^26.4.1",
     "tslint": "^6.1.3",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^4.0.3"
+    "typescript": "^4.0.3",
+    "yup": "^0.32.11"
   },
   "jest": {
     "transform": {
