@@ -84,6 +84,12 @@ describe('autoprops', () => {
       expect(v.validate('name', { name: ' ' })).toBe(false);
       expect(v.validate('name', { name: 'dingo' })).toBe(true);
     });
+    it('returns true if optional property missing from state', () => {
+      const v = Validation<{ name?: string }>({
+        name: [required()],
+      });
+      expect(v.validate('name', {})).toBe(true);
+    })
     it('returns true if value is a number', () => {
       const v = Validation<{ age: number | undefined | null }>({
         age: [required()],

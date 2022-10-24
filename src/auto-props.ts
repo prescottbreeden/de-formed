@@ -1,5 +1,5 @@
-import startCase from 'lodash.startcase';
-import { ValidationAutoProp } from './types';
+import startCase from 'lodash.startcase'
+import { ValidationAutoProp } from './types'
 import {
   cond,
   eq,
@@ -11,17 +11,17 @@ import {
   trim,
   truthy,
   typeOf,
-} from './utilities';
+} from './utilities'
 
 // --[ errors ]----------------------------------------------------------------
 const err = (error: string) => (recieved: any) => {
-  throw new Error(`${error} but received ${recieved}`);
-};
-const longerThanError = err('longerThan must be used on a string');
-const shorterThanError = err('shorterThan must be used on a string');
-const matchesError = err('matches must be used on a string');
-const minError = err('min requires a number representation');
-const maxError = err('max requires a number representation');
+  throw new Error(`${error} but received ${recieved}`)
+}
+const longerThanError = err('longerThan must be used on a string')
+const shorterThanError = err('shorterThan must be used on a string')
+const matchesError = err('matches must be used on a string')
+const minError = err('min requires a number representation')
+const maxError = err('max requires a number representation')
 
 /**
  * Auto-Prop function to generate a required validation.
@@ -39,7 +39,7 @@ export const required = (error?: string): ValidationAutoProp => ({
         [() => true, () => true],
       ])(data[prop]),
   }),
-});
+})
 
 /**
  * Auto-Prop function to generate a regex validation.
@@ -54,7 +54,7 @@ export const matches = (regex: RegExp, error?: string): ValidationAutoProp => ({
         [() => true, matchesError],
       ])(data[prop]),
   }),
-});
+})
 
 /**
  * Auto-Prop function to generate a longerThan validation.
@@ -75,7 +75,7 @@ export const longerThan = (
         [() => true, longerThanError],
       ])(data[prop]),
   }),
-});
+})
 
 /**
  * Auto-Prop function to generate a longerThan validation.
@@ -96,7 +96,7 @@ export const shorterThan = (
         [() => true, shorterThanError],
       ])(data[prop]),
   }),
-});
+})
 
 export const min = (value: number, error?: string): ValidationAutoProp => ({
   auto: true,
@@ -110,7 +110,7 @@ export const min = (value: number, error?: string): ValidationAutoProp => ({
         [() => true, minError],
       ])(data[prop]),
   }),
-});
+})
 
 export const max = (value: number, error?: string): ValidationAutoProp => ({
   auto: true,
@@ -123,7 +123,7 @@ export const max = (value: number, error?: string): ValidationAutoProp => ({
         [() => true, maxError],
       ])(data[prop]),
   }),
-});
+})
 
 export const is = (
   value: any | ((x: any) => boolean),
@@ -135,4 +135,4 @@ export const is = (
     validation: (data: S): boolean =>
       typeof value === 'function' ? value(data[prop]) : data[prop] === value,
   }),
-});
+})

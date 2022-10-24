@@ -76,12 +76,12 @@ describe('validation helpers', () => {
 
   describe('generateError', () => {
     it('returns a string if given a string', () => {
-      const result = generateError({ name: 'bob ross' })('bob ross is awesome');
+      const result = generateError({ name: 'bob ross' }, 'bob ross is awesome');
       expect(result).toBe('bob ross is awesome');
     });
     it('returns a string if given a function', () => {
       const error = ({ name }: any) => `${name} is nifty`;
-      const result = generateError({ name: 'bob ross' })(error);
+      const result = generateError({ name: 'bob ross' }, error);
       expect(result).toBe('bob ross is nifty');
     });
   });
