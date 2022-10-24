@@ -24,8 +24,9 @@ const minError = err('min requires a number representation')
 const maxError = err('max requires a number representation')
 
 /**
- * Auto-Prop function to generate a required validation.
- * Returns false when value is null, undefined, or empty string
+ * Auto-Prop function to generate a `required` validation.
+ * Returns false when value is null, undefined, or empty string.
+ * Optional properties not found in the state will be ignored.
  */
 export const required = (error?: string): ValidationAutoProp => ({
   auto: true,
@@ -43,6 +44,7 @@ export const required = (error?: string): ValidationAutoProp => ({
 
 /**
  * Auto-Prop function to generate a regex validation.
+ * Non-string values will throw an error.
  */
 export const matches = (regex: RegExp, error?: string): ValidationAutoProp => ({
   auto: true,
@@ -57,7 +59,8 @@ export const matches = (regex: RegExp, error?: string): ValidationAutoProp => ({
 })
 
 /**
- * Auto-Prop function to generate a longerThan validation.
+ * Auto-Prop function to generate a `longerThan` validation.
+ * Non-string values will throw an error.
  */
 export const longerThan = (
   len: number,
@@ -78,7 +81,8 @@ export const longerThan = (
 })
 
 /**
- * Auto-Prop function to generate a longerThan validation.
+ * Auto-Prop function to generate a `longerThan` validation.
+ * Non-string and non-array values will throw an error.
  */
 export const shorterThan = (
   len: number,
@@ -98,6 +102,10 @@ export const shorterThan = (
   }),
 })
 
+/**
+ * Auto-Prop function to generate a `min` validation.
+ * Non-numbers and strings that cannot be converted to a number will throw an error.
+ */
 export const min = (value: number, error?: string): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
@@ -112,6 +120,10 @@ export const min = (value: number, error?: string): ValidationAutoProp => ({
   }),
 })
 
+/**
+ * Auto-Prop function to generate a `max` validation.
+ * Non-numbers and strings that cannot be converted to a number will throw an error.
+ */
 export const max = (value: number, error?: string): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
@@ -125,6 +137,10 @@ export const max = (value: number, error?: string): ValidationAutoProp => ({
   }),
 })
 
+/**
+ * Auto-Prop function to generate an `is` validation.
+ * Accepts any value or a predicate function.
+ */
 export const is = (
   value: any | ((x: any) => boolean),
   error?: string,

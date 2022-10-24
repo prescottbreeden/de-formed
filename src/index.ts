@@ -41,14 +41,13 @@ type DefaultProps<S> = {
 }
 
 /**
- * Curried function that takes a string and returns a function which
  * determines if a property on the validation state is valid (true) or invalid
  * (false). Defaults to true if the the property doesn't exist.
  */
-export const isPropertyValid =
-  <S>(property: keyof S) =>
-  (validationState: ValidationState): boolean =>
-    validationState[property as string]?.isValid ?? true
+export const isPropertyValid = <S>(
+  property: keyof S,
+  validationState: ValidationState,
+): boolean => validationState[property as string]?.isValid ?? true
 
 /**
  * Determine if all properties on the ValidationState are valid.
@@ -58,7 +57,7 @@ export const calculateIsValid = (
 ): boolean => {
   const state = readValue(validationState)
   return Object.keys(state).reduce<boolean>((acc, curr) => {
-    return acc ? isPropertyValid(curr)(state) : acc
+    return acc ? isPropertyValid(curr, state) : acc
   }, true)
 }
 
@@ -196,7 +195,7 @@ export const createValidate =
         }),
       }
       setValidationState(newValidationState)
-      return isPropertyValid(property)(newValidationState)
+      return isPropertyValid(property, newValidationState)
     } else {
       return true
     }
@@ -246,7 +245,7 @@ export const createValidateIfDirty =
           validationSchema,
         }),
       }
-      const valid = isPropertyValid(property)(updatedState)
+      const valid = isPropertyValid(property, updatedState)
       const dirty = vState[property].dirty
       if (dirty) {
         setValidationState(updatedState)
@@ -357,7 +356,7 @@ export const createGetFieldValid =
     validationState: ValidationState | (() => ValidationState),
   ): GetFieldValid<S> =>
   (property: keyof S, vState = readValue(validationState)): boolean =>
-    isPropertyValid(property)(vState)
+    isPropertyValid(property, vState)
 
 /**
  * Returns an onBlur function that calls validate on a property matching the

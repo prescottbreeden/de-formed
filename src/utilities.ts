@@ -1,20 +1,65 @@
 // --[ fucntional utils ]------------------------------------------------------
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const trim = (value: any) => value.trim()
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const truthy = (value: any) => !!value
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const pipe =
   (...fns: Function[]) =>
   (arg: any) =>
     fns.reduce((acc, curr) => curr(acc), arg)
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const cond = (predicateFnMatrix: Function[][]) => (arg: any) => {
   for (const [predicate, func] of predicateFnMatrix) {
     if (predicate(arg)) return func(arg)
   }
 }
-export const typeOf = (type: string) => (value: any) => typeof value === type
+/**
+ *  @Private
+ *  Internal utility function.
+ */
+export const typeOf = (type: string) => (value: any) => {
+  if (type === 'array') {
+    return Array.isArray(value)
+  }
+  return typeof value === type
+}
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const length = (value: string | any[]) => value.length
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const gt = (testVal: number) => (value: number) => value > testVal
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const lt = (testVal: number) => (value: number) => value < testVal
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const match = (regExp: RegExp) => (value: string) => regExp.test(value)
+/**
+ *  @Private
+ *  Internal utility function.
+ */
 export const eq = (a: any) => (b: any) => a === b
 
 /**
