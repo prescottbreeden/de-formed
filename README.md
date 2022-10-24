@@ -165,8 +165,7 @@ const useBlogValidation = () => {
     author: [required()],
     content: [required()],
     terms: [is(true)],
-    canAutoSave: [
-      // <-- notice this key does not exist in the Blog type
+    canAutoSave: [ // <-- notice this key does not exist in the Blog type
       {
         error: 'Please provide a title before saving your progress',
         validation: ({ title, status }) =>
@@ -334,8 +333,7 @@ const BlogForm = ({ data, onChange, publishFailed }) => {
 
   // listen for publish failed events
   React.useEffect(() => {
-    // if a publish event has failed, run all validations
-    publishFailed && validateAll(data)
+    if(publishFailed) validateAll(data)
   }, [publishFailed])
 
   return (
@@ -396,7 +394,7 @@ content input.
 Here is an extended
 [codesandbox](https://codesandbox.io/s/epic-water-xgwk4?file=/src/components/CreateUser.component.tsx)
 example that kicks out the jams on what you can do with composable forms when
-the need arises:
+the need arises.
 
 ---
 
@@ -536,9 +534,6 @@ want to create is, @De-Formed gives you tremendous customization options.
 
 ## Yup Compatible
 
-If you are already using Yup or wish to use its schema design, simply pass your
-Yup schema to @De-Formed with the following config option
-
 ```ts
 const schema = Yup.object({
   name: Yup.string()
@@ -561,6 +556,9 @@ const schema = Yup.object({
   agreement: Yup.boolean().isTrue('Must accept terms'),
 })
 ```
+
+If you are already using Yup or wish to use its schema design, simply pass your
+Yup schema to @De-Formed with the following config option:
 
 ```ts
 const v = Validation(schema, { yup: true })
@@ -708,6 +706,304 @@ const handleSave = () => {
 If your server isn't built with JavaScript, write a transformation that suitably
 converts your APIs error payload into a validation state before calling
 `setValidationState` to render errors on the DOM by their associated inputs.
+
+This solution is great when you are not using nested forms, however, which is a
+little bit more of a trick.
+
+Fortunately, if you are using React, the solution is achievable through the use
+of context. One of the key aspects of composing validations and composing forms
+is that each validation schema and each form exist with no knowledge of their
+parent elements. This means that our error structure the API sends us also
+needs to be devoid of hierarchical organization.
+
+---
+
+## Recursive Types, Forms, and Validations
+
+Recursive data types are always a major pain-point in any architecture. Let's
+take an example with a recursive type and show how @De-Formed can break the
+problem down and make light work of the JSX components. The validation schema
+is still in need of an abstraction to make this work auto-magically. We will
+either be adding a configuration option or a special hook to handle this edge
+case in a future version.
+
+```ts
+type Contact = {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  pet: Pet // <-- nested
+  phones: Phone[] // <-- nested
+  bestFriend: Contact | undefined // <-- recursive
+}
+```
+
+Validation Schema:
+```ts
+import { Contact } from '../types'
+import { ValidateAll, ValidationSchema } from '@de-formed/base'
+import { usePetValdiation } from './usePetValidation'
+import { usePhoneValidation } from './usePhoneValidation'
+import { useValidation } from '@de-formed/react-validations'
+
+/**
+ * Implementation:
+ * All nested schema definitions are defined in the useValidation hook which
+ * merges the non-nested schema definitions defined separately. The purpose of
+ * separately defining the non-nested validations is to allow a helper function
+ * to manually map over the nested and non-nested types when it goes to recurse
+ * on the bestFriend property.
+ */
+
+// non-recursive/nested schema properties
+const contactBaseValidationSchema: ValidationSchema<Contact> = {
+  firstName: [
+    {
+      error: 'First Name is required',
+      validation: ({ firstName }) => firstName.length > 0,
+    },
+    {
+      error: 'First Name must be at least 2 characters',
+      validation: ({ firstName }) => firstName.length > 1,
+    },
+  ],
+  lastName: [
+    {
+      error: 'Last Name is required',
+      validation: ({ lastName }) => lastName.length > 0,
+    },
+    {
+      error: 'Last Name must be at least 2 characters',
+      validation: ({ lastName }) => lastName.length > 1,
+    },
+  ],
+  email: [
+    {
+      error: 'Email is required',
+      validation: ({ email }) => email.length > 0,
+    },
+  ],
+}
+
+// define a special validation function for our recursive type
+const validateBestFriend =
+  (validatePet: ValidateAll<Pet>, validatePhone: ValidateAll<Phone>) =>
+  ({ bestFriend }: Contact): boolean => {
+
+    // validate nested properties
+    const validPetAndPhones = [
+      validatePet(bestFriend.pet),
+      bestFriend.phones.map((p) => validatePhone(p)).every(Boolean),
+    ].every(Boolean)
+
+    // reduce the contactValidations object applying the bestFriend data to
+    // each validation property
+    const baseValidations = Object.keys(contactBaseValidationSchema).reduce(
+      (acc: boolean, curr: string) =>
+        contactBaseValidationSchema[curr] && acc
+          ? contactBaseValidationSchema[curr]
+              .map((v) => v.validation(bestFriend))
+              .every(Boolean)
+          : acc,
+      true,
+    )
+    return validPetAndPhones && baseValidations
+  }
+
+// define the validation hook
+export const useContactValdiation = () => {
+  const { validateAll: validatePet } = usePetValdiation()
+  const { validateAll: validatePhone } = usePhoneValidation()
+
+  return useValidation<Contact>({
+    ...contactBaseValidationSchema,
+    pet: [
+      {
+        error: 'Pet is not valid',
+        validation: ({ pet }: Contact) => validatePet(pet),
+      },
+    ],
+    phones: [
+      {
+        error: 'At least one valid phone number is required',
+        validation: ({ phones }: Contact) =>
+          phones.map((p) => validatePhone(p)).every(Boolean),
+      },
+    ],
+    bestFriend: [
+      {
+        error: 'Best Friend is not valid',
+        validation: validateBestFriend(validatePet, validatePhone),
+        // ^ use the special validation function to return true/false
+      },
+    ],
+  })
+}
+```
+
+To render server-side errors on the inputs of this form, each nested/recursive
+type must have a unique identifier associated with the data. This is given
+essentially for free if you are working with a NoSQL database but might involve
+some architecture if you are working with a more traditional database. When the
+API returns errors to us, they should be in an object that looks like a basic
+hash table of ids associated with validation states:
+
+```ts
+type APIerrors = {
+  [key: string]: ValidationState
+}
+```
+
+With this, we can set up a context to prevent the need to pass side-effects
+down the component tree, each form can pluck off the required information.
+
+_Note: this pattern will be available to import in a future version release._
+
+```ts
+// useForm.tsx
+import React from 'react'
+
+export const FormContext = React.createContext<any>({} as any)
+export const useForm = () => React.useContext(FormContext)
+
+export const useFormProvider = () => {
+  const [submitFailed, setSubmitFailed] = React.useState(false)
+  const [resetValidation, setResetValidation] = React.useState(false)
+  const [APIerrors, setAPIerrors] = React.useState<APIerrors>({})
+
+  return {
+    APIerrors,
+    resetValidation,
+    setAPIerrors,
+    setResetValidation,
+    setSubmitFailed,
+    submitFailed,
+  }
+}
+```
+
+Render the forms within the provider in your form controller:
+
+```tsx
+export const CreateContact: React.FC<CreateContactProps> = () => {
+  const [contact, setContact] = React.useState<Contact>({
+    // initial form state
+  })
+  const { validateAll } = useContactValdiation()
+  const Form = useFormProvider()
+
+  const handleSubmit = () => {
+    if (validateAll(contact)) {
+      Form.setSubmitFailed(false) // update submit failed in context
+      Query(contact).then(Form.setAPIerrors) // set errors into context
+    } else {
+      Form.setSubmitFailed(true) // update submit failed in context
+    }
+  }
+
+  // forms rarely have resets, but if you need a reset option:
+  const handleReset = () => {
+    setContact({ /** initial form state **/ })
+    Form.setResetValidation(!Form.resetValidation)
+    Form.setSubmitFailed(false)
+  }
+
+  return (
+    <>
+      <FormContext.Provider value={Form}>
+        <div role="form">
+          <Heading>Create Contact</Heading>
+          <ContactForm data={contact} onChange={setContact} />
+          <div>
+            <Button onClick={handleReset}>Cancel</Button>
+            <Button onClick={handleSubmit}>Submit</Button>
+          </div>
+        </div>
+      </FormContext.Provider>
+    </>
+  )
+}
+```
+
+Listen for changes around form submissions through the `useForm` hook:
+
+```tsx
+export const PetForm: React.FC<FormProps<Pet>> = ({ data, onChange }) => {
+  const { APIerrors, submitFailed, resetValidation } = useForm()
+
+  const {
+    getError,
+    resetValidationState,
+    setValidationState,
+    validateAll,
+    validateOnBlur,
+    validateOnChange,
+    validationState,
+  } = usePetValdiation()
+
+  const handleChange = (event: any) => {
+    onChange({ ...data, [event.target.name]: event.target.value })
+  }
+
+  // merge the API errors with the current validationState
+  const mergeApiErrors = (errors: APIerrors) => {
+    setValidationState({ ...validationState, errors[data.id] })
+  }
+
+  React.useEffect(() => {
+    if(submitFailed) validateAll(data)
+  }, [submitFailed, data])
+
+  React.useEffect(() => {
+    if(APIerrors[data.id]) mergeApiErrors(APIerrors)
+  }, [APIerrors])
+
+  React.useEffect(() => {
+    resetValidationState()
+  }, [resetValidation])
+
+  return (
+    <>
+      <div>
+        <FieldText
+          label="Name"
+          name="name"
+          onBlur={validateOnBlur(data)}
+          onChange={validateOnChange(handleChange, data)}
+          validationMessage={getError('name')}
+          value={data.name}
+        />
+      </div>
+      <div>
+        <FieldText
+          label="Favorite Food"
+          name="favoriteFood"
+          onBlur={validateOnBlur(data)}
+          onChange={validateOnChange(handleChange, data)}
+          validationMessage={getError('favoriteFood')}
+          value={data.favoriteFood}
+        />
+      </div>
+      <div>
+        <FieldSelect
+          label="Pet Type"
+          name="type"
+          onBlur={validateOnBlur(data)}
+          onChange={validateOnChange(handleChange, data)}
+          options={[
+            { value: 'cat', label: 'Cat' },
+            { value: 'dog', label: 'Dog' },
+            { value: 'crab', label: 'Crab' },
+          ]}
+          validationMessage={getError('type')}
+          value={data.type}
+        />
+      </div>
+    </>
+  )
+}
+```
 
 ---
 
