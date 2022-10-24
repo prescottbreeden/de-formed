@@ -24,6 +24,21 @@ import {
 } from './utilities';
 
 export * from './types';
+export * from './auto-props';
+
+type UpdateProperty<S> = {
+  config?: SchemaConfig;
+  dirty: boolean;
+  property: keyof S;
+  state: S;
+  validationSchema: ValidationSchema<S>;
+}
+type DefaultProps<S> = {
+  config?: SchemaConfig;
+  setValidationState: SetValidationState;
+  validationSchema: ValidationSchema<S>;
+  validationState: ValidationState | (() => ValidationState);
+}
 
 /**
  * Curried function that takes a string and returns a function which
@@ -64,6 +79,11 @@ export const gatherValidationErrors = <S>(
   }, []);
 };
 
+const getKeys = <S>({ validationSchema, config }: any) =>
+  config?.yup
+    ? Object.keys(validationSchema.fields) as Array<keyof S>
+    : Object.keys(validationSchema) as Array<keyof S>
+
 /**
  * Creates the validation state based on the keys of the defined schema
  */
@@ -73,86 +93,79 @@ export const createValidationState = <S>({
 }: {
   validationSchema: ValidationSchema<S>;
   config?: SchemaConfig;
-}): ValidationState =>
-  config?.yup
-    ? Object.keys(validationSchema.fields).reduce<ValidationState>(
-        (acc, key) => {
-          acc[key] = {
-            dirty: false,
-            errors: [],
-            isValid: true,
-          };
-          return acc;
-        },
-        {},
-      )
-    : Object.keys(validationSchema).reduce<ValidationState>((acc, key) => {
-        acc[key] = {
-          dirty: false,
-          errors: [],
-          isValid: true,
-        };
-        return acc;
-      }, {});
+}): ValidationState => {
+  return getKeys({ config, validationSchema }).reduce<ValidationState>(
+    (acc, key) => {
+      acc[key] = {
+        dirty: false,
+        errors: [],
+        isValid: true,
+      };
+      return acc;
+    },
+    {},
+  );
+};
+
+const handleYupUpdates = <S>({
+  dirty,
+  property,
+  state,
+  validationSchema,
+}: UpdateProperty<S>): ValidationStateProperty => {
+  let errors: string[] = [];
+  let isValid = true;
+  const { fields } = validationSchema;
+  const exists = Object.keys(fields).includes(property as string);
+  try {
+    if (exists) {
+      validationSchema.validateSyncAt(property, state, {
+        abortEarly: false,
+      });
+    }
+  } catch (error: any) {
+    errors = error.inner.reduce(
+      (acc: any, curr: any) => [...acc, curr.message],
+      [],
+    );
+    isValid = false;
+  }
+  return { dirty, errors, isValid };
+}
 
 /**
  * Helper function to create updated properties to merge with the ValidationState.
  * If the property doesn't exist it defaults to truthy state.
  */
-export const updateProperty = <S>({
-  config,
+const handleUpdates = <S>({
   dirty,
   property,
   state,
   validationSchema,
-}: {
-  config?: SchemaConfig;
-  dirty: boolean;
-  property: keyof S;
-  state: S;
-  validationSchema: ValidationSchema<S>;
-}): ValidationStateProperty => {
-  if (config?.yup) {
-    let errors: string[] = [];
-    let isValid = true;
-    const { fields } = validationSchema;
-    const exists = Object.keys(fields).includes(property as string);
-    try {
-      if (exists) {
-        validationSchema.validateSyncAt(property, state, {
-          abortEarly: false,
-        });
+}: UpdateProperty<S>): ValidationStateProperty => {
+  const validationRules =
+    validationSchema[property as keyof ValidationSchema<S>] ?? [];
+
+  const errors = validationRules
+    .map((validationRule: Validation<S>) => {
+      if ('auto' in validationRule) {
+        // check if Validation is an AutoProp
+        return validationRule.prop(property).validation(state)
+          ? ''
+          : generateError(state)(validationRule.prop(property).error);
+      } else {
+        return validationRule.validation(state)
+          ? ''
+          : generateError(state)(validationRule.error);
       }
-    } catch (error: any) {
-      errors = error.inner.reduce(
-        (acc: any, curr: any) => [...acc, curr.message],
-        [],
-      );
-      isValid = false;
-    }
-    return { dirty, errors, isValid };
-  } else {
-    const validationRules =
-      validationSchema[property as keyof ValidationSchema<S>] ?? [];
+    })
+    .filter(stringIsNotEmpty);
 
-    const errors = validationRules
-      .map((validationRule: Validation<S>) => {
-        if ('auto' in validationRule) {
-          // check if Validation is an AutoProp
-          return validationRule.prop(property).validation(state)
-            ? ''
-            : generateError(state)(validationRule.prop(property).error);
-        } else {
-          return validationRule.validation(state)
-            ? ''
-            : generateError(state)(validationRule.error);
-        }
-      })
-      .filter(stringIsNotEmpty);
+  return { dirty, errors, isValid: Boolean(!errors.length) };
+}
 
-    return { dirty, errors, isValid: Boolean(!errors.length) };
-  }
-};
+export const updateProperty = <S>({ config, ...props }: UpdateProperty<S>) =>
+  config?.yup ? handleYupUpdates({ ...props }) : handleUpdates({ ...props });
 
 /**
  * Creates a validate function that is exposed on the ValidationObject which
@@ -164,12 +177,7 @@ export const createValidate =
     setValidationState,
     validationSchema,
     validationState,
-  }: {
-    config?: SchemaConfig;
-    setValidationState: SetValidationState;
-    validationSchema: ValidationSchema<S>;
-    validationState: ValidationState | (() => ValidationState);
-  }): Validate<S> =>
+  }: DefaultProps<S>): Validate<S> =>
   (property: keyof S, state: S) => {
     const vState = readValue(validationState);
     if (vState[property]) {
@@ -218,12 +226,7 @@ export const createValidateIfDirty =
     setValidationState,
     validationSchema,
     validationState,
-  }: {
-    config?: SchemaConfig;
-    setValidationState: SetValidationState;
-    validationSchema: ValidationSchema<S>;
-    validationState: ValidationState | (() => ValidationState);
-  }): ValidateIfDirty<S> =>
+  }: DefaultProps<S>): ValidateIfDirty<S> =>
   (property: keyof S, state: S): boolean => {
     const vState = readValue(validationState);
     if (vState[property]) {
@@ -259,18 +262,8 @@ export const createValidateAll =
     setValidationState,
     validationSchema,
     validationState,
-  }: {
-    config?: SchemaConfig;
-    setValidationState: SetValidationState;
-    validationSchema: ValidationSchema<S>;
-    validationState: ValidationState | (() => ValidationState);
-  }): ValidateAll<S> =>
-  (
-    state: S,
-    props = Object.keys(
-      config?.yup ? validationSchema.fields : validationSchema,
-    ) as Array<keyof S>,
-  ): boolean => {
+  }: DefaultProps<S>): ValidateAll<S> =>
+  (state: S, props = getKeys({ validationSchema, config })): boolean => {
     const vState = readValue(validationState);
     const updatedState = props.reduce<ValidationState>(
       (acc, property) => ({
@@ -300,18 +293,8 @@ export const createValidateAllIfDirty =
     setValidationState,
     validationSchema,
     validationState,
-  }: {
-    config?: SchemaConfig;
-    setValidationState: SetValidationState;
-    validationSchema: ValidationSchema<S>;
-    validationState: ValidationState | (() => ValidationState);
-  }): ValidateAllIfDirty<S> =>
-  (
-    state: S,
-    props = Object.keys(
-      config?.yup ? validationSchema.fields : validationSchema,
-    ) as Array<keyof S>,
-  ): boolean => {
+  }: DefaultProps<S>): ValidateAllIfDirty<S> =>
+  (state: S, props = getKeys({ validationSchema, config })): boolean => {
     const vState = readValue(validationState);
     const updatedState = props.reduce<ValidationState>((acc, property) => {
       const isDirty = acc[property as keyof ValidationState]?.dirty ?? false;
@@ -379,12 +362,7 @@ export const createValidateOnBlur =
     validationSchema,
     validationState,
     setValidationState,
-  }: {
-    config?: SchemaConfig;
-    validationSchema: ValidationSchema<S>;
-    validationState: ValidationState | (() => ValidationState);
-    setValidationState: SetValidationState;
-  }): ValidateOnBlur<S> =>
+  }: DefaultProps<S>): ValidateOnBlur<S> =>
   (state: S) =>
   (event: any): void => {
     const incomingFormState = {
@@ -410,12 +388,7 @@ export const createValidateOnChange =
     validationSchema,
     validationState,
     setValidationState,
-  }: {
-    config?: SchemaConfig;
-    validationSchema: ValidationSchema<S>;
-    validationState: ValidationState | (() => ValidationState);
-    setValidationState: SetValidationState;
-  }): ValidateOnChange<S> =>
+  }: DefaultProps<S>): ValidateOnChange<S> =>
   (onChange: (event: any) => any, state: S) =>
   (event: any): any => {
     const incomingFormState = {

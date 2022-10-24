@@ -1,4 +1,17 @@
 import startCase from 'lodash.startcase';
+import { ValidationAutoProp } from './types';
+import {
+  cond,
+  eq,
+  gt,
+  length,
+  lt,
+  match,
+  pipe,
+  trim,
+  truthy,
+  typeOf,
+} from './utilities';
 
 // --[ errors ]----------------------------------------------------------------
 const err = (error: string) => (recieved: any) => {
@@ -10,37 +23,11 @@ const matchesError = err('matches must be used on a string');
 const minError = err('min requires a number representation');
 const maxError = err('max requires a number representation');
 
-// --[ fucntional utils ]------------------------------------------------------
-const trim = (value: any) => value.trim();
-const truthy = (value: any) => !!value;
-const pipe =
-  (...fns: Function[]) =>
-  (arg: any) =>
-    fns.reduce((acc, curr) => curr(acc), arg);
-const cond = (predicateFnMatrix: Function[][]) => (arg: any) => {
-  for (const [predicate, func] of predicateFnMatrix) {
-    if (predicate(arg)) return func(arg);
-  }
-};
-const typeOf = (type: string) => (value: any) => typeof value === type;
-const length = (value: string | any[]) => value.length;
-const gt = (testVal: number) => (value: number) => value > testVal;
-const lt = (testVal: number) => (value: number) => value < testVal;
-const match = (regExp: RegExp) => (value: string) => regExp.test(value);
-const eq = (a: any) => (b: any) => a === b
-
-export const UNIT_TEST = {
-  gt,
-  length,
-  lt,
-  match,
-  pipe,
-  trim,
-  truthy,
-  typeOf,
-};
-
-export const required = (error?: string) => ({
+/**
+ * Auto-Prop function to generate a required validation.
+ * Returns false when value is null, undefined, or empty string
+ */
+export const required = (error?: string): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error: error || `${startCase(prop as string)} is required.`,
@@ -54,7 +41,10 @@ export const required = (error?: string) => ({
   }),
 });
 
-export const matches = (regex: RegExp, error?: string) => ({
+/**
+ * Auto-Prop function to generate a regex validation.
+ */
+export const matches = (regex: RegExp, error?: string): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error: error || `${startCase(prop as string)} is invalid.`,
@@ -66,7 +56,13 @@ export const matches = (regex: RegExp, error?: string) => ({
   }),
 });
 
-export const longerThan = (len: number, error?: string) => ({
+/**
+ * Auto-Prop function to generate a longerThan validation.
+ */
+export const longerThan = (
+  len: number,
+  error?: string,
+): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error:
@@ -81,7 +77,13 @@ export const longerThan = (len: number, error?: string) => ({
   }),
 });
 
-export const shorterThan = (len: number, error?: string) => ({
+/**
+ * Auto-Prop function to generate a longerThan validation.
+ */
+export const shorterThan = (
+  len: number,
+  error?: string,
+): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error:
@@ -96,7 +98,7 @@ export const shorterThan = (len: number, error?: string) => ({
   }),
 });
 
-export const min = (value: number, error?: string) => ({
+export const min = (value: number, error?: string): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error:
@@ -110,7 +112,7 @@ export const min = (value: number, error?: string) => ({
   }),
 });
 
-export const max = (value: number, error?: string) => ({
+export const max = (value: number, error?: string): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error: error || `${startCase(prop as string)} must be less than ${value}.`,
@@ -123,7 +125,10 @@ export const max = (value: number, error?: string) => ({
   }),
 });
 
-export const is = (value: any | ((x: any) => boolean), error?: string) => ({
+export const is = (
+  value: any | ((x: any) => boolean),
+  error?: string,
+): ValidationAutoProp => ({
   auto: true,
   prop: <S>(prop: keyof S) => ({
     error: error || `${startCase(prop as string)} must be ${value}.`,

@@ -1,5 +1,24 @@
+// --[ fucntional utils ]------------------------------------------------------
+export const trim = (value: any) => value.trim();
+export const truthy = (value: any) => !!value;
+export const pipe =
+  (...fns: Function[]) =>
+  (arg: any) =>
+    fns.reduce((acc, curr) => curr(acc), arg);
+export const cond = (predicateFnMatrix: Function[][]) => (arg: any) => {
+  for (const [predicate, func] of predicateFnMatrix) {
+    if (predicate(arg)) return func(arg);
+  }
+};
+export const typeOf = (type: string) => (value: any) => typeof value === type;
+export const length = (value: string | any[]) => value.length;
+export const gt = (testVal: number) => (value: number) => value > testVal;
+export const lt = (testVal: number) => (value: number) => value < testVal;
+export const match = (regExp: RegExp) => (value: string) => regExp.test(value);
+export const eq = (a: any) => (b: any) => a === b
+
 /**
- *  @De-formed/base
+ *  @Private
  *  Internal utility function. Takes an argument and if that argument is a
  *  function then it will call it with no parameters, otherwise it will just
  *  return the argument.
@@ -9,7 +28,7 @@ export const readValue = <A>(value: A) => {
 };
 
 /**
- *  @De-formed/base
+ *  @Private
  *  Internal utility function.
  */
 export const stringIsNotEmpty = (str: string): boolean => {
@@ -17,7 +36,7 @@ export const stringIsNotEmpty = (str: string): boolean => {
 };
 
 /**
- * @De-Formed/base
+ * @Private
  * Internal Utility. Function that takes either a string or a function stransforming a form state
  * to a string to generate an error for the validation state.
  */
@@ -28,7 +47,7 @@ export const generateError =
   };
 
 /**
- *  @De-formed/base
+ *  @Private
  *  Internal Utility. Takes an event and extracts either the target.value
  *  property (or the target.checked property if type is 'checkbox') and returns
  *  it as the value of a key of target.name.

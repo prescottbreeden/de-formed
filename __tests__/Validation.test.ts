@@ -21,15 +21,15 @@ const schema: ValidationSchema<TestSchema> = {
     },
     {
       error: 'Must be dingo.',
-      validation: (state: TestSchema) => {
-        return state.dingo ? state.name === 'dingo' : true;
+      validation: ({ dingo, name }) => {
+        return dingo ? name === 'dingo' : true;
       },
     },
   ],
   age: [
     {
       error: 'Must be 18.',
-      validation: (state: TestSchema) => state.age >= 18,
+      validation: ({ age }) => age >= 18,
     },
   ],
   agreement: [
@@ -71,7 +71,7 @@ const failingState = {
   age: 15,
 };
 
-describe('useValidation tests', () => {
+describe('Validation tests', () => {
   it('should be defined', () => {
     expect(Validation).toBeDefined();
   });

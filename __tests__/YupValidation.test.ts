@@ -23,10 +23,7 @@ const schema = Yup.object({
         test: (value: string | undefined) => value === 'dingo',
       }),
     }),
-  age: Yup.number().test({
-    message: 'Must be 18.',
-    test: (value: number | undefined) => (value ? value >= 18 : false),
-  }),
+  age: Yup.number().min(18, 'Must be 18.'),
   agreement: Yup.boolean().isTrue('Must accept terms'),
 });
 

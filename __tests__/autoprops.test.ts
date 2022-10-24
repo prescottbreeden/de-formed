@@ -1,6 +1,15 @@
 import { Validation } from '../examples/vanilla';
 import {
-  UNIT_TEST,
+  gt,
+  length,
+  lt,
+  match,
+  pipe,
+  trim,
+  truthy,
+  typeOf,
+} from '../src/utilities';
+import {
   is,
   longerThan,
   matches,
@@ -9,8 +18,6 @@ import {
   required,
   shorterThan,
 } from '../src/auto-props';
-
-const { gt, length, lt, match, pipe, trim, truthy, typeOf } = UNIT_TEST;
 
 describe('predicates', () => {
   describe('gt', () => {
