@@ -25,6 +25,7 @@ yet or to create your own variant that suits your needs.
 1. **Lightweight** - [compare it on bundlephobia](https://bundlephobia.com/package/@de-formed/react-validations)
 1. **Easy to Use** - functions all the way down
 1. **Easy to Test** - unit test your validation rules
+1. **Yup Compatible** - can integrate with your existing yup schemas
 
 ---
 
@@ -46,88 +47,55 @@ looking for an existing solution, please visit one of the links below.
 - [React Hook](https://github.com/prescottbreeden/de-formed-validations-react)
 - [Node / VanillaJS](https://github.com/prescottbreeden/de-formed-validations-node)
 
-
 ---
 
-## Example Schemas
+## Validation Schema
 
-Auto-props are functions that apply simple validation rules for strings and
-numbers. Auto-props only work for keys of a schema that match the name of a
-property. 
+The validation schema is on object that defines a list of validation rules for
+any given key. Each validation rule consists of the error to display to a user
+and a function that returns true or false. Error messages can be passed a
+function to generate dynamic error messages depending on the state of the data.
 
 ```ts
-const PersonValidation = Validation<Person>({
-  name: [required(), shorterThan(12)],
-  age: [min(42), max(100)],
-  agreement: [is(true, 'Must accept terms.')],
-});
+{
+  email: [
+    {
+      error: 'Email is required.',
+      validation: ({ email }) => email.trim().length > 0,
+    },
+    {
+    error: ({ email }) => `"${email}" is not a valid email.`,
+      validation: ({ email, name }) =>
+        name === 'bob ross' ? email === 'bob.ross@gmail.com' : true
+    },
+  ],
+}
 ```
 
-Available Auto-props are:
-
-- `required` (string/number)
-- `matches` (string)
-- `shorterThan` (string)
-- `longerThan` (string)
-- `min` (number)
-- `max` (number)
-- `is` (any type, also accepts a predicate function)
-
-Auto-props are great for handling very simple rules, however more complex
-validations should use the explicit schema format:
+To instantiate @De-Formed, pass a validation schema to the constructor. We
+highly recommend wrapping your schema constructors in a function call. This
+will make it easier to compose and reuse across your application:
 
 ```ts
-const PersonValidation = () =>
-  Validation<Person>({
-    name: [
-      required(),
+import { useValidation } from '@de-formed/react-validations'
+
+cosnt personValidation = () => {
+  return useValidation<Person>({
+    email: [
       {
-        error: 'Cannot be bob.',
-        validation: ({ name }) => name !== 'bob',
+        error: 'Email is required.',
+        validation: ({ email }) => email.trim().length > 0,
       },
       {
-        error: ({ name }) => `${name} must be dingo.`,
-        validation: ({ dingo, name }) => (dingo ? name === 'dingo' : true),
+        error: ({ email }) => `"${email}" is not a valid email.`,
+        validation: ({ email, name }) =>
+          name === 'bob ross' ? email === 'bob.ross@gmail.com' : true,
       },
     ],
-    age: [min(42, 'Must be 42 or older.')],
-    agreement: [is(true, 'Must accept terms')],
-  });
+  })
+}
 ```
 
----
-
-## Yup Compatible
-
-If you are already using Yup or wish to use its schema design, simply pass your
-Yup schema to @De-Formed with the following config option
-
-```ts
-const schema = Yup.object({
-  name: Yup.string()
-    .required('Name is required.')
-    .test({
-      message: 'Cannot be bob.',
-      test: (value: string | undefined) => value !== 'bob',
-    })
-    .when('dingo', {
-      is: true,
-      then: Yup.string().test({
-        message: 'Must be dingo.',
-        test: (value: string | undefined) => value === 'dingo',
-      }),
-    }),
-  age: Yup.number().test({
-    message: 'Must be 42 or older.',
-    test: (value: number | undefined) => (value ? value >= 42 : false),
-  }),
-  agreement: Yup.boolean().isTrue('Must accept terms'),
-});
-
-```
-```ts
-const v = Validation(schema, { yup: true })
-```
 ---
 
 ## Conditional Validation with Polymorphic Types
@@ -138,29 +106,30 @@ that could be for various types of pets with different validation requirements:
 
 ```ts
 // schema using the React Hook
-const PetValidationSchema = () => {
+export const petValidationSchema = () => {
   return useValidation<Pet>({
     favoriteChewToy: [
       {
         error: 'Favorite Chew Toy is required.',
-        validation: pet => isDog(pet) ? !!pet.favoriteChewToy : true
+        validation: (pet) => (isDog(pet) ? !!pet.favoriteChewToy : true),
       },
     ],
     sleepingHabits: [
       {
         error: 'Sleeping Habits is required.',
-        validation: pet => isCat(pet) ? !!pet.sleepingHabits : true
+        validation: (pet) => (isCat(pet) ? !!pet.sleepingHabits : true),
       },
     ],
     isDancing: [
       {
         error: 'Crabs should always be dancing',
-        validation: pet => isCrab(pet) ? pet.isDancing : true
+        validation: (pet) => (isCrab(pet) ? pet.isDancing : true),
       },
     ],
   })
 }
 ```
+
 ---
 
 ## Flexible Schema Definitions
@@ -179,53 +148,62 @@ type Blog = {
   status: 'draft' | 'published'
 }
 ```
+
 Requirements for publishing a blog vs auto-saving:
 
 Approach #1 -- create a schema that defines our publishing validations but has
 an additional rule for auto-saving:
+
 ```ts
-// react hook example
+import { required, is } from '@de-formed/base'
+import { useValidation } from '@de-formed/react-validations'
+
+// react hook example with auto-props
 const useBlogValidation = () => {
   return useValidation<Blog>({
     title: [required()],
     author: [required()],
     content: [required()],
     terms: [is(true)],
-    canAutoSave: [ // <-- notice this key does not exist in the Blog type
+    canAutoSave: [
+      // <-- notice this key does not exist in the Blog type
       {
-        error: "Please provide a title before saving your progress",
+        error: 'Please provide a title before saving your progress',
         validation: ({ title, status }) =>
-          title.trim().length > 0 && status === 'draft'
-      }
-    ]
+          title.trim().length > 0 && status === 'draft',
+      },
+    ],
   })
 }
 ```
+
 ```ts
 // inside a React Component
 const { validate } = useBlogValidation()
 
 const autoSave = () => {
-  if(validate('canAutoSave', blog)) {
+  if (validate('canAutoSave', blog)) {
     // auto save logic
   }
 }
 
 const publish = () => {
   // use the overloads for validateAll to call the validations for publishing
-  if(validateAll(blog, ['title', 'author', 'content', 'terms'])) {
+  if (validateAll(blog, ['title', 'author', 'content', 'terms'])) {
     // publish blog logic
   }
 }
 ```
+
 This approach might make the most sense in some scenarios, but an alternative
 might be to compose our blog validation with another schema to handle
-auto-saving versus publishing. 
+auto-saving versus publishing.
 
 Approach #2 -- compose validation requirements into two schemas
 
+_Note that this example is using [Auto-Props](#auto-props)_
+
 ```ts
-// same schema as before but with canAutoSave removed
 const useBlogValidation = () => {
   return useValidation<Blog>({
     title: [required()],
@@ -235,6 +213,7 @@ const useBlogValidation = () => {
   })
 }
 ```
+
 ```ts
 // new schema with dedicated auto-save and publish validations composed with
 // blog validations
@@ -244,43 +223,48 @@ const useBlogSubmitValidation = () => {
   return useValidation<Blog>({
     canAutoSave: [
       {
-        error: "Please provide a title before saving your progress",
+        error: 'Blogs must be in draft and contain a title to be saved.',
         validation: ({ title, status }) =>
-          title.trim().length > 0 && status === 'draft'
-      }
+          title.trim().length > 0 && status === 'draft',
+      },
     ],
     canPublish: [
       {
         error: 'Not all requirements have been met for publishing.',
-        validation: validateAll
-      }
-    ]
+        validation: (blog) => validateAll(blog),
+      },
+    ],
   })
 }
 ```
+
 ```ts
 // inside a React Component
 const { validate } = useBlogSubmitValidation()
 
 const autoSave = () => {
-  if(validate('canAutoSave', blog)) {
+  if (validate('canAutoSave', blog)) {
     // auto save logic
   }
 }
 
 const publish = () => {
-  if(validate('canPublish', blog)) {
+  if (validate('canPublish', blog)) {
     // publish blog logic
   }
 }
 ```
+
 An advantage here is that the rules are now more declarative and
 self-documenting. It is clear to see A) what is a valid blog, B) what are the
 requirements to auto-save, and C) what are the requirements to publish. All of
 these requirements encapsulated within a hook and easily re-shared with other
 components that might need to do similar validation checks.
 
+---
+
 ## Composing Forms with Validations
+
 In the previous example, we showed how you can be more expressive with composition
 as validation requirements become more complex. However, if all we communicated
 to a user was `Not all requirements have been met for publishing.` we would be
@@ -288,6 +272,7 @@ providing a very poor experience. However, we can compose forms just the same
 as we composed our validation schemas.
 
 To do this, we will create two different abstractions:
+
 - a Blog Form
 - a Blog Controller
 
@@ -299,15 +284,17 @@ event outside the form itself.
 ```tsx
 // BlogController.tsx
 const BlogController = () => {
-  const [blog, setBlog] = React.useState({ /** initial blog state **/ })
-  const [publishFailed, setPublishFailed] = React.useState(false)
+  const [blog, setBlog] = React.useState<Blog>({
+    /** initial blog state **/
+  })
+  const [publishFailed, setPublishFailed] = React.useState<boolean>(false)
   const { getError, validate } = useBlogSubmitValidation()
 
   const onChange = (data: Partial<Blog>) =>
-    setBlog(prev => ({ ...prev, ...data }))
+    setBlog((prev) => ({ ...prev, ...data }))
 
   const publish = () => {
-    if(validate('canPublish', blog)) {
+    if (validate('canPublish', blog)) {
       setPublishFailed(false)
       // publish blog logic
     } else {
@@ -318,13 +305,15 @@ const BlogController = () => {
   return (
     <>
       <h2>Edit Blog</h2>
-      <BlogForm
-        data={blog}
-        onChange={onChange}
-        publishFailed={publishFailed}
-      />
-      <button onClick={publish}>Publish Blog</button>
-      {getError('canPublish') && <p>{getError('canPublish')}</p>}
+      <div role="form">
+        <BlogForm
+          data={blog}
+          onChange={onChange}
+          publishFailed={publishFailed}
+        />
+        <button onClick={publish}>Publish Blog</button>
+        {getError('canPublish') && <p>{getError('canPublish')}</p>}
+      </div>
     </>
   )
 }
@@ -334,17 +323,14 @@ const BlogController = () => {
 // BlogForm.tsx
 const BlogForm = ({ data, onChange, publishFailed }) => {
   // instantiate our blog validations
-  const {
-    getError,
-    validateOnChange,
-    validateOnBlur,
-    validateAll
-  } = useBlogValidation()
+  const { getError, validateOnChange, validateOnBlur, validateAll } =
+    useBlogValidation()
 
   // create an onchange handler that can transform an event into a partial
-  const handleChange = (event) => onChange({
-    [event.target.name]: [event.target.value]
-  })
+  const handleChange = (event) =>
+    onChange({
+      [event.target.name]: [event.target.value],
+    })
 
   // listen for publish failed events
   React.useEffect(() => {
@@ -391,15 +377,11 @@ const BlogForm = ({ data, onChange, publishFailed }) => {
   )
 }
 ```
+
 Now when a publish event fails, the child form is notified to run its
 validations to provide feedback to the user about what specifically failed.
-
 This pattern can be used to generate form partials that can be reused and
-composed in as many parts of the application as necessary. Trying to compose
-forms with form libraries that are dependent on redux under the hood and use
-form tags is about as pleasant as trying to administer your own colonoscopy.
-Furthermore, form tags do not provide any necessary accessibility for the web.
-[More on web accessibility for forms.](https://www.w3.org/WAI/tutorials/forms/)
+composed in as many parts of the application as necessary.
 
 In addition, all of the form logic is decoupled from the validation logic.
 @De-Formed can be easily removed or updated with different validation
@@ -410,6 +392,37 @@ of creating a great user experience. @De-Formed provides complete control over
 how you wish validation behavior to occur. For example, if we don't want
 content validations to fire onBlur events, we simply remove the binding on the
 content input.
+
+Here is an extended codesandbox example that kicks the jams out on what you can
+do with composable forms when the need arises:
+<iframe src="https://codesandbox.io/embed/epic-water-xgwk4?fontsize=14&hidenavigation=1&theme=dark"
+     style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
+     title="epic-water-xgwk4"
+     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+   ></iframe>
+
+---
+
+## A Quick Note on Form Tags
+
+We do not use the semantic `<form>` tag in our examples. Form tags make
+re-using and composing forms difficult as it is invalid for a form tag to be
+nested within another form tag. Furthermore, form tags do not provide any
+necessary accessibility for the web. Form tags are treated by assistive
+technology as landmarks that can be jumped to (much like <nav>); however, these
+roles are mostly useful in cases where you _want_ to make a form an explicit
+landmark. There is no a11y requirement that all forms need to be landmarks, but
+if you wish for a form to be, you can wrap a container div containing the child
+form(s) with a `role="form"` tag. However, this simply tells a screen reader
+there is a form region. There are numerous ways to provide enhanced a11y for
+declaring regions than purely through declaring a region as a generic entity,
+especially if there are multiple forms on a page. This might seem polemical to
+challenge the notion of semantic HTML but not all useful regions have semantic
+HTML tags to accompany them (e.g., `role="banner"` or `role="search"`) and so
+it is important to explicitly think about how best to convey to assistive
+technology regions that are important for a user to quickly navigate.
+[More on web accessibility for forms.](https://www.w3.org/WAI/tutorials/forms/)
 
 ---
 
@@ -452,6 +465,7 @@ const useQuantityValidation = () => {
   }),
 }
 ```
+
 Each time a user changes the measurement select box, we want to run the value
 validations so that they don't continue with the form until the value is valid
 according to the measurement selected:
@@ -513,6 +527,7 @@ const QuantityForm = () => {
   )
 }
 ```
+
 Under the hood, `validateOnChange` and `validateOnBlur` run `validateIfDirty`
 and `validate` respectively, but just snag the event name from the event to
 look up what validations it should run. Here, we leveraged the same idea but
@@ -520,6 +535,135 @@ customized it so that one particular event name always fires two validations.
 
 The important point here is that no matter what the UX of your validations you
 want to create is, @De-Formed gives you tremendous customization options.
+
+---
+
+## Yup Compatible
+
+If you are already using Yup or wish to use its schema design, simply pass your
+Yup schema to @De-Formed with the following config option
+
+```ts
+const schema = Yup.object({
+  name: Yup.string()
+    .required('Name is required.')
+    .test({
+      message: 'Cannot be bob.',
+      test: (value: string | undefined) => value !== 'bob',
+    })
+    .when('dingo', {
+      is: true,
+      then: Yup.string().test({
+        message: 'Must be dingo.',
+        test: (value: string | undefined) => value === 'dingo',
+      }),
+    }),
+  age: Yup.number().test({
+    message: 'Must be 42 or older.',
+    test: (value: number | undefined) => (value ? value >= 42 : false),
+  }),
+  agreement: Yup.boolean().isTrue('Must accept terms'),
+})
+```
+
+```ts
+const v = Validation(schema, { yup: true })
+```
+
+---
+
+## Auto-Props
+
+Auto-props are functions that apply simple validation rules for strings and
+numbers.
+
+**_Auto-props only work for keys of a schema that match the name of a property on
+the state._**
+
+```ts
+type Person = {
+  name: string
+  age: number
+  agreement: boolean
+}
+
+// valid use of auto-props
+const personValidation = () => {
+  return Validation<Person>({
+    name: [required(), shorterThan(12)],
+    age: [min(42), max(100)],
+    agreement: [is(true, 'Must accept terms.')],
+  })
+}
+
+// invalid use of auto-props
+const personValidation = () => {
+  return Validation<Person>({
+    name: [required(), shorterThan(12)],
+    age: [min(42), max(100)],
+    agreement: [is(true, 'Must accept terms.')],
+    isAwesome: [required()], // <-- `isAwesome` doesn't exist on a Person object
+  })
+}
+```
+
+Auto-props are ignored when the key they are defined on does not exist on the
+object being validated. The reason for this is that under the hood, auto-props
+are passed the value of a property from the object state directly and are not
+intended to handle conditional validations which custom keys are intended for.
+Because auto-props are designed to also handle optional properties, the only
+way to handle `undefined` as a value versus `undefined` as a missing property
+is to ignore the auto-prop if the target property is not defined on the object
+being validated.
+
+```ts
+// invalid schema fixed
+const personValidation = () => {
+  return Validation<Person>({
+    name: [required(), shorterThan(12)],
+    age: [min(42), max(100)],
+    agreement: [is(true, 'Must accept terms.')],
+    isAwesome: [
+      {
+        error: ({ name }) => `${name} is not awesome.`,
+        validation: ({ name }) => name === 'Bob Ross',
+      },
+    ],
+  })
+}
+```
+
+Available Auto-props are:
+
+- `required` (string/number)
+- `matches` (string)
+- `shorterThan` (string)
+- `longerThan` (string)
+- `min` (number)
+- `max` (number)
+- `is` (any type, also accepts a predicate function)
+
+Auto-props are great for handling very simple rules, however more complex
+validations should use the explicit schema format:
+
+```ts
+const PersonValidation = () =>
+  Validation<Person>({
+    name: [
+      required(),
+      {
+        error: 'Cannot be bob.',
+        validation: ({ name }) => name !== 'bob',
+      },
+      {
+        error: ({ name }) => `${name} must be dingo.`,
+        validation: ({ dingo, name }) => (dingo ? name === 'dingo' : true),
+      },
+    ],
+    age: [min(42, 'Must be 42 or older.')],
+    agreement: [is(true, 'Must accept terms')],
+  })
+```
 
 ---
 
@@ -535,16 +679,16 @@ const createNewPet = async (pet: Pet) => {
   const v = Validation<Pet>({
     license: [matches(/some-regex/), 'License must be valid'],
     exists: [is(false, 'Pet already exists')],
-  });
-  const existing = await Pet.find(pet);
+  })
+  const existing = await Pet.find(pet)
   v.validateAll({ license: pet.license, exists: Boolean(existing) })
   if (v.isValid) {
-    const newPet = await Pet.create(pet) 
-    return { errors: v.validationState, pet: newPet };
+    const newPet = await Pet.create(pet)
+    return { errors: v.validationState, pet: newPet }
   } else {
-    return { errors: v.validationState, pet: null };
+    return { errors: v.validationState, pet: null }
   }
-};
+}
 ```
 
 ```ts
@@ -558,12 +702,13 @@ const handleSave = () => {
         // success -> do happy path
       } else {
         // ruh-roh -> display API errors
-        setValidationState(response.errors);
+        setValidationState(response.errors)
       }
-    });
-  } 
-};
+    })
+  }
+}
 ```
+
 If your server isn't built with JavaScript, write a transformation that suitably
 converts your APIs error payload into a validation state before calling
 `setValidationState` to render errors on the DOM by their associated inputs.
@@ -574,11 +719,12 @@ converts your APIs error payload into a validation state before calling
 
 All validation functions for @De-Formed are synchronous for performance and
 simplicity. Validations that require asynchronous logic can be abstracted to a
-process before running your validation checks. 
- - better encapsulation around your validation state
- - allows validation state to be used in control flow
- - requires developers to handle their own blocking application states (e.g.,
-    loading, processing, pre-flight checks, etc.).
+process before running your validation checks.
+
+- better encapsulation around your validation state
+- allows validation state to be used in control flow
+- requires developers to handle their own blocking application states (e.g.,
+  loading, processing, pre-flight checks, etc.).
 
 ---
 
