@@ -393,14 +393,10 @@ how you wish validation behavior to occur. For example, if we don't want
 content validations to fire onBlur events, we simply remove the binding on the
 content input.
 
-Here is an extended codesandbox example that kicks the jams out on what you can
-do with composable forms when the need arises:
-<iframe src="https://codesandbox.io/embed/epic-water-xgwk4?fontsize=14&hidenavigation=1&theme=dark"
-     style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
-     title="epic-water-xgwk4"
-     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-   ></iframe>
+Here is an extended
+[codesandbox](https://codesandbox.io/s/epic-water-xgwk4?file=/src/components/CreateUser.component.tsx)
+example that kicks out the jams on what you can do with composable forms when
+the need arises:
 
 ---
 
