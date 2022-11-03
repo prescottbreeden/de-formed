@@ -1,4 +1,3 @@
-import startCase from 'lodash.startcase'
 import { ValidationAutoProp } from './types'
 import {
   cond,
@@ -8,6 +7,7 @@ import {
   lt,
   match,
   pipe,
+  startCase,
   trim,
   truthy,
   typeOf,

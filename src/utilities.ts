@@ -1,4 +1,22 @@
 // --[ fucntional utils ]------------------------------------------------------
+const isLetter = (str: string) => /[a-zA-Z]/.test(str)
+/**
+ *  @Private
+ *  Internal utility function.
+ */
+export const startCase = (value: string) => {
+  if (value === undefined || value === null) return ''
+  return value.split('').reduce((acc: string[], curr: string, idx: number) => {
+    const next = value[idx + 1]
+    if (idx === 0) {
+      return [...acc, curr.toUpperCase()]
+    } else if (next && isLetter(next) && next.toUpperCase() === next) {
+      return [...acc, curr, ' ']
+    } else {
+      return [...acc, curr]
+    }
+  }, []).join('')
+}
 /**
  *  @Private
  *  Internal utility function.

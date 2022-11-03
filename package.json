@@ -1,6 +1,6 @@
 {
   "name": "@de-formed/base",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "Base Validation Class to generate validations for various implementations of @De-Formed.",
   "main": "dist/index",
   "repository": "https://github.com/prescottbreeden/de-formed",
@@ -19,10 +19,7 @@
     "version": "yarn format && git add .",
     "postversion": "git push && git push --tags"
   },
-  "dependencies": {
-    "@types/lodash.startcase": "^4.4.7",
-    "lodash.startcase": "^4.4.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^26.0.14",
     "jest": "^26.5.3",

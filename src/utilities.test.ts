@@ -2,10 +2,31 @@ import {
   eventNameValue,
   generateError,
   readValue,
+  startCase,
   stringIsNotEmpty,
 } from '../src/utilities';
 
-describe('validation helpers', () => {
+describe('utilties', () => {
+  describe('startcase', () => {
+    it('ignores undefined and null', () => {
+      expect(startCase(null as any)).toBe('')
+      expect(startCase(undefined as any)).toBe('')
+    })
+    it('title cases a camelCased propery', () => {
+      expect(startCase('rubberBabyBuggyBumpers')).toBe('Rubber Baby Buggy Bumpers')
+    })
+    it('title cases a crazy object properties', () => {
+      const props = {
+        0: true,
+        t0: true,
+        $twenty2: true
+      }
+      const keys = Object.keys(props)
+      expect(startCase(keys[0])).toBe('0')
+      expect(startCase(keys[1])).toBe('T0')
+      expect(startCase(keys[2])).toBe('$twenty2')
+    })
+  })
   describe('stringIsNotEmpty', () => {
     it('returns true if string has length', () => {
       expect(stringIsNotEmpty('dingo')).toBe(true);
