@@ -15,6 +15,7 @@ import {
   createValidateOnChange,
   createValidationState,
   gatherValidationErrors,
+  ValidationObject,
 } from '../src'
 import { readValue } from '../src/utilities'
 
@@ -92,7 +93,7 @@ export function Validation<S>(
   const getAllErrors = createGetAllErrors<S>(validationState)
   const getFieldValid = createGetFieldValid<S>(validationState)
 
-  const validationObject = {
+  const validationObject: ValidationObject<S> = {
     getAllErrors,
     getError,
     getFieldValid,
